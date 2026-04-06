@@ -1,8 +1,12 @@
 import 'package:go_router/go_router.dart';
 import 'package:med_guard/core/notifier/auth_notifier.dart';
-import 'package:med_guard/features/auth/presentation/pages/home_page.dart';
 import 'package:med_guard/features/auth/presentation/pages/login_page.dart';
 import 'package:med_guard/features/auth/presentation/pages/splash_page.dart';
+import 'package:med_guard/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:med_guard/features/pillbox/domain/entities/medicine.dart';
+import 'package:med_guard/features/pillbox/presentation/pages/add_medicine_page.dart';
+import 'package:med_guard/features/pillbox/presentation/pages/pillbox_page.dart';
+import 'package:med_guard/features/pillbox/presentation/pages/update_medicine_page.dart';
 
 part 'app_routes.dart';
 
@@ -15,40 +19,65 @@ class AppGoRouter {
 
       redirect: (context, state) {
         final loggedIn = authNotifier.isAuthenticated;
-        final isLoggingIn = state.matchedLocation == AppRoutes.loginScreen;
+        final isLoading = authNotifier.isLoading;
 
-        if (authNotifier.isLoading) return AppRoutes.splashScreen;
+        final isLogin = state.matchedLocation == AppRoutes.loginScreen;
+        final isSplash = state.matchedLocation == AppRoutes.splashScreen;
 
-        // Not logged in → force login
-        if (!loggedIn && !isLoggingIn) {
+        final isPublicRoute = isLogin || isSplash;
+
+        if (isLoading) {
+          return isSplash ? null : AppRoutes.splashScreen;
+        }
+
+        if (!loggedIn && !isPublicRoute) {
           return AppRoutes.loginScreen;
         }
 
-        // Already logged in → prevent going back to login
-        if (loggedIn && isLoggingIn) {
-          return AppRoutes.homeScreen;
+        if (loggedIn && isLogin) {
+          return AppRoutes.dashboardScreen;
         }
 
         return null;
       },
 
       routes: [
-        /// Splash
         GoRoute(
           path: AppRoutes.splashScreen,
           builder: (context, state) => SplashPage(),
         ),
 
-        /// Login
         GoRoute(
           path: AppRoutes.loginScreen,
           builder: (context, state) => LoginPage(),
         ),
 
-        /// Protected Home
         GoRoute(
-          path: AppRoutes.homeScreen,
-          builder: (context, state) => HomePage(),
+          path: AppRoutes.dashboardScreen,
+          builder: (context, state) => DashboardPage(),
+        ),
+
+        GoRoute(
+          path: AppRoutes.pillbox,
+          builder: (context, state) => const PillboxPage(),
+        ),
+
+        GoRoute(
+          path: AppRoutes.addMedicine,
+          builder: (context, state) => const AddMedicinePage(),
+        ),
+
+        GoRoute(
+          path: AppRoutes.updateMedicine,
+          builder: (context, state) {
+            final medicine = state.extra;
+
+            if (medicine is! Medicine) {
+              return const DashboardPage();
+            }
+
+            return UpdateMedicinePage(medicine: medicine);
+          },
         ),
       ],
     );

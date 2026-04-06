@@ -1,19 +1,39 @@
+import 'package:hive/hive.dart';
 import 'package:med_guard/features/auth/domain/entities/user.dart';
 
-class UserModel extends User {
+@HiveType(typeId: 1)
+class UserModel extends HiveObject {
+  @HiveField(0)
+  final String id;
+
+  @HiveField(1)
+  final String email;
+
   UserModel({
-    required super.id,
-    required super.email,
-    required super.accessToken,
-    required super.refreshToken,
+    required this.id,
+    required this.email,
   });
+
+  /// 🔁 Entity → Model
+  factory UserModel.fromEntity(User user) {
+    return UserModel(
+      id: user.id,
+      email: user.email,
+    );
+  }
+
+  /// 🔁 Model → Entity
+  User toEntity() {
+    return User(
+      id: id,
+      email: email,
+    );
+  }
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       id: json['id'],
       email: json['email'],
-      accessToken: json['accessToken'],
-      refreshToken: json['refreshToken'],
     );
   }
 
@@ -21,8 +41,6 @@ class UserModel extends User {
     return {
       "id": id,
       "email": email,
-      "accessToken": accessToken,
-      "refreshToken": refreshToken,
     };
   }
 }

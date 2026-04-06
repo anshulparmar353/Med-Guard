@@ -22,16 +22,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     });
 
-    on<CheckAuthStatus>((event, emit) async {
-      final user = await repository.getCachedUser();
-
-      if (user != null) {
-        emit(AuthAuthenticated(user));
-      } else {
-        emit(AuthUnauthenticated());
-      }
-    });
-
     on<LogoutRequested>((event, emit) async {
       await repository.logout();
       emit(AuthUnauthenticated());

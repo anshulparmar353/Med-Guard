@@ -2,7 +2,7 @@ import 'package:hive_flutter/adapters.dart';
 import 'package:med_guard/features/auth/data/models/user_model.dart';
 
 class AuthLocalDataSource {
-  final Box<Map> box;
+  final Box box;
 
   AuthLocalDataSource(this.box);
 
@@ -15,18 +15,13 @@ class AuthLocalDataSource {
     });
   }
 
-  UserModel? getUser({
-    String? accessToken,
-    String? refreshToken,
-  }) {
+  UserModel? getUser() {
     final data = box.get(userKey);
     if (data == null) return null;
 
     return UserModel(
       id: data['id'],
       email: data['email'],
-      accessToken: accessToken ?? "",
-      refreshToken: refreshToken ?? "",
     );
   }
 

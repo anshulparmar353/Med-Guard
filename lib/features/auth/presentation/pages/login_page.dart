@@ -18,13 +18,20 @@ class _LoginPageState extends State<LoginPage> {
   final passwordController = TextEditingController();
 
   @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text("Login")),
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthAuthenticated) {
-            context.go(AppRoutes.homeScreen);
+            context.go(AppRoutes.dashboardScreen);
           }
 
           if (state is AuthError) {
@@ -34,35 +41,54 @@ class _LoginPageState extends State<LoginPage> {
           }
         },
         builder: (context, state) {
-          return Padding(
+          return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
                 TextField(
                   controller: emailController,
-                  decoration: InputDecoration(labelText: "Email"),
+                  keyboardType: TextInputType.emailAddress,
+                  autofillHints: const [AutofillHints.email],
+                  decoration: const InputDecoration(labelText: "Email"),
                 ),
+
                 TextField(
                   controller: passwordController,
                   obscureText: true,
-                  decoration: InputDecoration(labelText: "Password"),
+                  autofillHints: const [AutofillHints.password],
+                  decoration: const InputDecoration(labelText: "Password"),
                 ),
+
                 const SizedBox(height: 20),
 
-                if (state is AuthLoading)
-                  CircularProgressIndicator()
-                else
-                  ElevatedButton(
-                    onPressed: () {
-                      context.read<AuthBloc>().add(
-                        LoginRequested(
-                          emailController.text,
-                          passwordController.text,
-                        ),
-                      );
-                    },
-                    child: Text("Login"),
-                  ),
+                ElevatedButton(
+                  onPressed: state is AuthLoading
+                      ? null
+                      : () {
+                          final email = emailController.text.trim();
+                          final password = passwordController.text.trim();
+
+                          if (email.isEmpty || password.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Enter email & password"),
+                              ),
+                            );
+                            return;
+                          }
+
+                          context.read<AuthBloc>().add(
+                            LoginRequested(email, password),
+                          );
+                        },
+                  child: state is AuthLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text("Login"),
+                ),
               ],
             ),
           );

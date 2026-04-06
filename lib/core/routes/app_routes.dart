@@ -1,4 +1,4 @@
-part  of 'app_go_router.dart';
+part of 'app_go_router.dart';
 
 abstract class AppRoutes {
   AppRoutes._();
@@ -8,7 +8,11 @@ abstract class AppRoutes {
   static const signupScreen = '/signup-screen';
   static const forgotPasswordScreen = '/forgot-password-screen';
 
-  static const homeScreen = '/home-screen';
   static const dashboardScreen = '/dashboard-screen';
   static const profileScreen = '/profile-screen';
+
+  static const pillbox = '/pill-box';
+  static const addMedicine = '/add-medicine';
+  static const updateMedicine = '/update-medicine';
+  static const deleteMedicine = '/delete-medicine';
 }
