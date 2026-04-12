@@ -1,4 +1,7 @@
 import 'package:hive/hive.dart';
+import 'package:med_guard/features/dashboard/data/datasources/tracking_local_datasource.dart';
+import 'package:med_guard/features/dashboard/data/datasources/tracking_remote_datasource.dart';
+import 'package:med_guard/features/dashboard/data/models/dose_log_model.dart';
 import 'package:med_guard/features/pillbox/data/datasources/medicine_local_datasource.dart';
 import 'package:med_guard/features/pillbox/data/datasources/medicine_remote_datasource.dart';
 import 'package:med_guard/features/pillbox/data/models/medicine_model.dart';
@@ -11,12 +14,20 @@ class SyncService {
   final SyncQueueLocalDataSource queue;
   final MedicineRemoteDataSource remote;
   final MedicineLocalDataSource local;
+  final TrackingRemoteDataSource trackingRemote;
+  final TrackingLocalDataSource trackingLocal;
 
   bool _isSyncing = false;
 
   final Logger logger = Logger();
 
-  SyncService({required this.queue, required this.remote, required this.local});
+  SyncService({
+    required this.queue,
+    required this.remote,
+    required this.local,
+    required this.trackingRemote,
+    required this.trackingLocal,
+  });
 
   /// 🔁 PUBLIC SYNC ENTRY
   Future<void> sync(String userId) async {
@@ -43,6 +54,8 @@ class SyncService {
 
             if (item.type == SyncType.add || item.type == SyncType.update) {
               await remote.uploadMedicine(userId, data);
+            } else if (item.type == SyncType.updateDose) {
+              await trackingRemote.uploadDose(userId, data);
             } else if (item.type == SyncType.delete) {
               await remote.deleteMedicine(userId, data['id']);
             }
@@ -55,6 +68,14 @@ class SyncService {
         await queue.remove(item.id);
       } catch (e) {
         logger.e('Push failed', error: e);
+
+        await queue.incrementRetry(item.id);
+
+        if (item.retryCount > 3) {
+          logger.e('Dropping item after max retries: ${item.id}');
+          await queue.remove(item.id);
+        }
+
         break;
       }
     }
@@ -82,22 +103,49 @@ class SyncService {
   Future<void> _pullWithRetry(String userId) async {
     final lastSync = await _getLastSyncTime();
 
-    final remoteData = await retry(
+    // =====================
+    // 🟢 MEDICINES SYNC
+    // =====================
+    final remoteMedicines = await retry(
       () => remote.fetchMedicines(userId, lastSync),
     );
 
-    final localData = local.getMedicines();
+    final localMedicines = local.getMedicines();
 
-    final remoteModels = remoteData
+    final medicineModels = remoteMedicines
         .map((e) => MedicineModel.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
 
-    final resolved = ConflictResolver.resolve(
-      local: localData, 
-      remote: remoteModels,
+    final resolvedMedicines = ConflictResolver.resolve<MedicineModel>(
+      local: localMedicines,
+      remote: medicineModels,
+      getId: (m) => m.id,
+      getUpdatedAt: (m) => m.updatedAt,
     );
 
-    await local.replaceAll(resolved);
+    await local.replaceAll(resolvedMedicines);
+
+    // =====================
+    // 🔥 DOSE SYNC (FIXED)
+    // =====================
+    final remoteDoses = await retry(
+      () => trackingRemote.fetchDoses(userId, lastSync),
+    );
+
+    final localDoses = await trackingLocal.getAllDoses();
+
+    final doseModels = remoteDoses
+        .map((e) => DoseLogModel.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+
+    final resolvedDoses = ConflictResolver.resolve<DoseLogModel>(
+      local: localDoses,
+      remote: doseModels,
+      getId: (d) => d.id,
+      getUpdatedAt: (d) => d.updatedAt,
+    );
+
+    await trackingLocal.replaceAllDoses(resolvedDoses);
 
     await _saveLastSyncTime();
   }

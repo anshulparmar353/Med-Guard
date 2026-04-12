@@ -30,7 +30,9 @@ class TrackingLocalDataSource {
     return dose;
   }
 
-  List<DoseLogModel> getAll() => box.values.toList();
+  Future<List<DoseLogModel>> getAllDoses() async {
+    return box.values.toList();
+  }
 
   Future<List<DoseLogModel>> getInRange(DateTime start, DateTime end) async {
     return box.values.where((d) {
@@ -41,19 +43,25 @@ class TrackingLocalDataSource {
   Future<void> markTaken(String id) async {
     final dose = box.get(id);
     if (dose != null) {
-      dose.status = "taken";
-      dose.takenAt = DateTime.now();
-      dose.updatedAt = DateTime.now();
-      await dose.save();
+      final updated = dose.copyWith(
+        status: "taken",
+        takenAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      await box.put(updated.id, updated);
     }
   }
 
   Future<void> markSkipped(String id) async {
     final dose = box.get(id);
     if (dose != null) {
-      dose.status = "skipped";
-      dose.updatedAt = DateTime.now();
-      await dose.save();
+      final updated = dose.copyWith(
+        status: "skipped",
+        updatedAt: DateTime.now(),
+      );
+
+      await box.put(updated.id, updated);
     }
   }
 
@@ -68,5 +76,20 @@ class TrackingLocalDataSource {
     }).toList();
 
     await box.deleteAll(keys);
+  }
+
+  Future<DoseLogModel?> getById(String id) async {
+    return box.get(id);
+  }
+
+  Future<void> update(DoseLogModel model) async {
+    await box.put(model.id, model);
+  }
+
+  Future<void> replaceAllDoses(List<DoseLogModel> doses) async {
+    await box.clear();
+    for (final d in doses) {
+      await box.put(d.id, d);
+    }
   }
 }

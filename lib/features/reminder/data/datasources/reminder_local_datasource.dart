@@ -1,4 +1,4 @@
-import 'package:med_guard/core/notification/notification_service.dart';
+import 'package:med_guard/core/services/notification_service.dart';
 import 'package:med_guard/features/reminder/domain/entities/reminder.dart';
 
 class ReminderLocalDataSource {

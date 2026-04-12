@@ -1,5 +1,5 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:med_guard/core/handler/remainder_action_handler.dart';
+import 'package:med_guard/core/services/notification_action_handler.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 
@@ -7,6 +7,8 @@ class NotificationService {
   static final _notifications = FlutterLocalNotificationsPlugin();
 
   static NotificationActionHandler? _handler;
+
+  static final Set<String> _processedActions = {};
 
   static void setHandler(NotificationActionHandler handler) {
     _handler = handler;
@@ -41,6 +43,7 @@ class NotificationService {
   /// 🔥 HANDLE ACTION BUTTONS
   static Future<void> _onActionTap(NotificationResponse response) async {
     final payload = response.payload;
+
     if (payload == null) return;
 
     final parts = payload.split('|');
@@ -50,6 +53,11 @@ class NotificationService {
     final doseId = parts[1];
 
     if (notificationId == null) return;
+
+    final actionKey = "$doseId-${response.actionId}";
+
+    if (_processedActions.contains(actionKey)) return;
+    _processedActions.add(actionKey);
 
     switch (response.actionId) {
       case 'TAKEN':
@@ -159,6 +167,11 @@ class NotificationService {
           'Medicine Reminder',
           importance: Importance.max,
           priority: Priority.high,
+          actions: [
+            AndroidNotificationAction('TAKEN', 'Taken'),
+            AndroidNotificationAction('SKIP', 'Skip'),
+            AndroidNotificationAction('SNOOZE', 'Snooze'),
+          ],
         ),
       ),
       payload: payload,

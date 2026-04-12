@@ -13,12 +13,16 @@ class SyncItem extends HiveObject {
   final Map<String, dynamic> data;
 
   @HiveField(3)
-  final DateTime timestamp;
+  final DateTime createdAt;
+
+  @HiveField(4)
+  int retryCount;
 
   SyncItem({
     required this.id,
     required this.type,
     required this.data,
-    required this.timestamp,
+    required this.createdAt,
+    this.retryCount = 0,
   });
 }

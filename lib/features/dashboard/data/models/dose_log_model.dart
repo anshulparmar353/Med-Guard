@@ -18,16 +18,16 @@ class DoseLogModel extends HiveObject {
   final DateTime scheduledTime;
 
   @HiveField(4)
-  DateTime? takenAt;
+  final DateTime? takenAt;
 
   @HiveField(5)
-  String status;
+  final String status;
 
   @HiveField(6)
-  DateTime updatedAt;
+  final DateTime updatedAt;
 
   @HiveField(7)
-  bool isDeleted;
+  final bool isDeleted;
 
   @HiveField(8)
   final int notificationId;
@@ -44,7 +44,10 @@ class DoseLogModel extends HiveObject {
     this.isDeleted = false,
   });
 
-  // 🔁 Convert to Domain Entity
+  // =========================
+  // 🔁 ENTITY CONVERSION
+  // =========================
+
   DoseLog toEntity() {
     return DoseLog(
       id: id,
@@ -52,13 +55,15 @@ class DoseLogModel extends HiveObject {
       medicineName: medicineName,
       scheduledTime: scheduledTime,
       takenAt: takenAt,
-      status: DoseStatus.values.firstWhere((e) => e.name == status),
+      status: DoseStatus.values.firstWhere(
+        (e) => e.name == status,
+        orElse: () => DoseStatus.pending,
+      ),
       updatedAt: updatedAt,
       notificationId: notificationId,
     );
   }
 
-  // 🔁 Convert from Domain Entity
   factory DoseLogModel.fromEntity(DoseLog e) {
     return DoseLogModel(
       id: e.id,
@@ -68,40 +73,89 @@ class DoseLogModel extends HiveObject {
       takenAt: e.takenAt,
       status: e.status.name,
       updatedAt: e.updatedAt,
-      isDeleted: false,
       notificationId: e.notificationId,
+      isDeleted: false,
     );
   }
 
-  // 🔁 Firestore → Model
+  // =========================
+  // 🔁 FIRESTORE PARSING
+  // =========================
+
   factory DoseLogModel.fromJson(Map<String, dynamic> json) {
     return DoseLogModel(
-      id: json['id'],
-      medicineId: json['medicineId'],
-      medicineName: json['medicineName'],
-      scheduledTime: (json['scheduledTime'] as Timestamp).toDate(),
+      id: json['id'] ?? '',
+      medicineId: json['medicineId'] ?? '',
+      medicineName: json['medicineName'] ?? '',
+      scheduledTime: _parseDate(json['scheduledTime']),
       takenAt: json['takenAt'] != null
-          ? (json['takenAt'] as Timestamp).toDate()
+          ? _parseDate(json['takenAt'])
           : null,
-      status: json['status'],
-      updatedAt: (json['updatedAt'] as Timestamp).toDate(),
+      status: json['status'] ?? DoseStatus.pending.name,
+      updatedAt: _parseDate(json['updatedAt']),
       isDeleted: json['isDeleted'] ?? false,
-      notificationId: json['notificationId'],
+      notificationId: json['notificationId'] ?? 0,
     );
   }
 
-  // 🔁 Model → Firestore
   Map<String, dynamic> toJson() {
-    return {
+    final map = {
       "id": id,
       "medicineId": medicineId,
       "medicineName": medicineName,
       "scheduledTime": Timestamp.fromDate(scheduledTime),
-      "takenAt": takenAt != null ? Timestamp.fromDate(takenAt!) : null,
       "status": status,
       "updatedAt": Timestamp.fromDate(updatedAt),
       "isDeleted": isDeleted,
       "notificationId": notificationId,
     };
+
+    if (takenAt != null) {
+      map["takenAt"] = Timestamp.fromDate(takenAt!);
+    }
+
+    return map;
+  }
+
+  // =========================
+  // 🔁 COPY WITH
+  // =========================
+
+  DoseLogModel copyWith({
+    String? id,
+    String? medicineId,
+    String? medicineName,
+    DateTime? scheduledTime,
+    DateTime? takenAt,
+    String? status,
+    DateTime? updatedAt,
+    bool? isDeleted,
+    int? notificationId,
+  }) {
+    return DoseLogModel(
+      id: id ?? this.id,
+      medicineId: medicineId ?? this.medicineId,
+      medicineName: medicineName ?? this.medicineName,
+      scheduledTime: scheduledTime ?? this.scheduledTime,
+      takenAt: takenAt,
+      status: status ?? this.status,
+      updatedAt: updatedAt ?? this.updatedAt,
+      isDeleted: isDeleted ?? this.isDeleted,
+      notificationId: notificationId ?? this.notificationId,
+    );
+  }
+
+  // =========================
+  // 🔧 SAFE DATE PARSER
+  // =========================
+
+  static DateTime _parseDate(dynamic value) {
+    if (value == null) return DateTime.now();
+
+    if (value is Timestamp) return value.toDate();
+
+    if (value is DateTime) return value;
+
+    return DateTime.tryParse(value.toString()) ?? DateTime.now();
   }
 }

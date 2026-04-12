@@ -5,5 +5,7 @@ class MarkDoseSkipped {
 
   MarkDoseSkipped(this.repo);
 
-  Future call(String id) => repo.markSkipped(id);
+  Future<void> call(String id) async {
+    await repo.markSkipped(id);
+  }
 }

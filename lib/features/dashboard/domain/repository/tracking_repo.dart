@@ -18,4 +18,6 @@ abstract class TrackingRepository {
   Future<List<DoseLog>> getByMedicineId(String medicineId);
 
   Future<void> deleteByMedicineId(String medicineId);
+
+  Future<void> markMissed(String id);
 }

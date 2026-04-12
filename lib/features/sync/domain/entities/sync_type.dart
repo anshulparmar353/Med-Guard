@@ -1,1 +1,1 @@
-enum SyncType { add, update, delete }
+enum SyncType { add, update, delete, updateDose }

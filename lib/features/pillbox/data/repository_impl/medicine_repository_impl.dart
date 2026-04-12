@@ -1,6 +1,6 @@
 import 'package:med_guard/features/pillbox/domain/repository/medicine_repository.dart';
 import 'package:med_guard/features/sync/data/datasources/sync_queue_local_DB.dart';
-import 'package:med_guard/features/sync/data/models/sync_model.dart';
+import 'package:med_guard/features/sync/data/models/sync_item.dart';
 import 'package:med_guard/features/sync/domain/entities/sync_type.dart';
 
 import '../../domain/entities/medicine.dart';
@@ -24,7 +24,7 @@ class MedicineRepositoryImpl implements MedicineRepository {
         id: model.id,
         type: SyncType.add,
         data: model.toJson(),
-        timestamp: DateTime.now(),
+        createdAt: DateTime.now(),
       ),
     );
   }
@@ -38,7 +38,7 @@ class MedicineRepositoryImpl implements MedicineRepository {
         id: id,
         type: SyncType.delete,
         data: {'id': id},
-        timestamp: DateTime.now(),
+        createdAt: DateTime.now(),
       ),
     );
   }
@@ -57,7 +57,7 @@ class MedicineRepositoryImpl implements MedicineRepository {
           id: model.id,
           type: SyncType.add,
           data: model.toJson(),
-          timestamp: DateTime.now(),
+          createdAt: DateTime.now(),
         ),
       );
     }

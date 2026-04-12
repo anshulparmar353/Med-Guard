@@ -1,12 +1,14 @@
 import 'package:flutter/widgets.dart';
+import 'package:med_guard/core/services/missed_dose_service.dart';
 import 'package:med_guard/core/services/sync_service.dart';
 
 class AppLifecycleSync with WidgetsBindingObserver {
   final SyncService syncService;
+  final MissedDoseService missedDoseService;
 
   String? _userId;
 
-  AppLifecycleSync(this.syncService);
+  AppLifecycleSync(this.syncService, this.missedDoseService);
 
   void init() {
     WidgetsBinding.instance.addObserver(this);
@@ -20,6 +22,7 @@ class AppLifecycleSync with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && _userId != null) {
       syncService.sync(_userId!); // ✅ correct
+      missedDoseService.checkAndMarkMissed();
     }
   }
 

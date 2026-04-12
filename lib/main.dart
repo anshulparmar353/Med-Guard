@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,7 +8,9 @@ import 'package:hive_flutter/adapters.dart';
 import 'package:med_guard/core/di/injection.dart';
 import 'package:med_guard/core/notifier/auth_notifier.dart';
 import 'package:med_guard/core/routes/app_go_router.dart';
-import 'package:med_guard/core/notification/notification_service.dart';
+import 'package:med_guard/core/services/missed_dose_service.dart';
+import 'package:med_guard/core/services/notification_action_handler.dart';
+import 'package:med_guard/core/services/notification_service.dart';
 import 'package:med_guard/core/sync/app_lifecycle_sync.dart';
 import 'package:med_guard/core/theme/app_theme.dart';
 import 'package:med_guard/features/auth/data/models/user_model.dart';
@@ -30,24 +34,31 @@ void main() async {
 
   init();
 
-  final lifecyclesync = sl<AppLifecycleSync>();
+  final lifecyclesync = getIt<AppLifecycleSync>();
 
   lifecyclesync.init();
 
   await NotificationService.init();
 
-  final authBloc = sl<AuthBloc>();
+  final handler = getIt<NotificationActionHandler>();
+  NotificationService.setHandler(handler);
+
+  final authBloc = getIt<AuthBloc>();
   final authNotifier = AuthNotifier(authBloc);
   final router = AppGoRouter.createRouter(authNotifier);
+
+  Timer.periodic(const Duration(minutes: 15), (_) {
+    getIt<MissedDoseService>().checkAndMarkMissed();
+  });
 
   runApp(
     MultiBlocProvider(
       providers: [
         BlocProvider<AuthBloc>(create: (_) => authBloc),
 
-        BlocProvider(create: (_) => sl<PillboxBloc>()),
+        BlocProvider(create: (_) => getIt<PillboxBloc>()),
 
-        BlocProvider(create: (_) => sl<DashboardBloc>()),
+        BlocProvider(create: (_) => getIt<DashboardBloc>()),
       ],
       child: MyApp(router: router),
     ),

@@ -1,27 +1,29 @@
-import 'package:med_guard/features/pillbox/data/models/medicine_model.dart';
-
 class ConflictResolver {
-  static List<MedicineModel> resolve({
-    required List<MedicineModel> local,
-    required List<MedicineModel> remote,
+  static List<T> resolve<T extends dynamic>({
+    required List<T> local,
+    required List<T> remote,
+    required String Function(T) getId,
+    required DateTime Function(T) getUpdatedAt,
   }) {
-    final Map<String, MedicineModel> result = {}; // ✅ FIXED TYPE
+    final Map<String, T> map = {};
 
-    // 🔹 Add local first
-    for (final med in local) {
-      result[med.id] = med;
+    for (final item in local) {
+      map[getId(item)] = item;
     }
 
-    // 🔹 Compare with remote
-    for (final remoteItem in remote) {
-      final localItem = result[remoteItem.id];
+    for (final item in remote) {
+      final id = getId(item);
+      final localItem = map[id];
 
-      if (localItem == null ||
-          remoteItem.updatedAt.isAfter(localItem.updatedAt)) {
-        result[remoteItem.id] = remoteItem;
+      if (localItem == null) {
+        map[id] = item;
+      } else {
+        if (getUpdatedAt(item).isAfter(getUpdatedAt(localItem))) {
+          map[id] = item;
+        }
       }
     }
 
-    return result.values.toList();
+    return map.values.toList();
   }
 }

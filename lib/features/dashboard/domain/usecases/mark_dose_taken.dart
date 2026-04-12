@@ -5,5 +5,7 @@ class MarkDoseTaken {
 
   MarkDoseTaken(this.repo);
 
-  Future call(String id) => repo.markTaken(id);
+  Future<void> call(String id) async {
+    await repo.markTaken(id);
+  }
 }
