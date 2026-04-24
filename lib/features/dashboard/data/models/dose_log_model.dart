@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/dose_log.dart';
 import '../../domain/entities/dose_status.dart';
 
+part 'dose_log_model.g.dart';
+
 @HiveType(typeId: 1)
 class DoseLogModel extends HiveObject {
   @HiveField(0)

@@ -22,23 +22,19 @@ class UpdateMedicineWithReschedule {
   });
 
   Future<void> call(Medicine medicine) async {
-    // 🔥 1. Get old doses
+
     final oldDoses = await trackingRepository.getByMedicineId(medicine.id);
 
-    // 🔥 2. Cancel old reminders
     for (final dose in oldDoses) {
-      await cancelReminder(dose.notificationId); // ✅ FIXED
+      await cancelReminder(dose.notificationId); 
     }
 
-    // 🔥 3. Delete old dose logs
     await trackingRepository.deleteByMedicineId(medicine.id);
 
-    // 🔥 4. Update medicine
     await medicineRepository.addMedicine(medicine);
 
-    // 🔥 5. Generate new doses + reminders
     for (final time in medicine.times) {
-      // Combine date + time (important)
+
       final now = DateTime.now();
 
       final scheduledTime = DateTime(
@@ -49,14 +45,12 @@ class UpdateMedicineWithReschedule {
         time.minute,
       );
 
-      // Create dose
       final dose = await createDose.call(
         medicineId: medicine.id,
         medicineName: medicine.name,
         scheduledTime: scheduledTime,
       );
 
-      // Schedule reminder
       await scheduleReminder(
         Reminder(
           id: dose.notificationId,

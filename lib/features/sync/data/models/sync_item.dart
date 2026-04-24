@@ -1,7 +1,9 @@
 import 'package:hive/hive.dart';
 import 'package:med_guard/features/sync/domain/entities/sync_type.dart';
 
-@HiveType(typeId: 3)
+part 'sync_item.g.dart';
+
+@HiveType(typeId: 4)
 class SyncItem extends HiveObject {
   @HiveField(0)
   final String id;

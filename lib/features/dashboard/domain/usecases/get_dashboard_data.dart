@@ -7,11 +7,12 @@ class GetDashboardData {
   GetDashboardData(this.repo);
 
   Future<DashboardData> call() async {
+    
     final today = await repo.getTodayDoses();
 
     int taken = 0;
     int missed = 0;
-    int skipped = 0; // ✅ ADD THIS
+    int skipped = 0; 
 
     final now = DateTime.now();
 
@@ -19,7 +20,7 @@ class GetDashboardData {
       if (d.status.name == "taken") {
         taken++;
       } else if (d.status.name == "skipped") {
-        skipped++; // ✅ COUNT SKIPPED
+        skipped++; // 
       } else if (d.scheduledTime.isBefore(now)) {
         missed++;
       }
@@ -30,7 +31,7 @@ class GetDashboardData {
     return DashboardData(
       taken: taken,
       missed: missed,
-      skipped: skipped, // ✅ NOW VALID
+      skipped: skipped, 
       adherence: adherence,
       todayDoses: today,
     );

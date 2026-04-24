@@ -2,6 +2,7 @@ abstract class DashboardEvent {}
 
 class LoadDashboard extends DashboardEvent {}
 
+class AppResumed extends DashboardEvent {}
 class MarkDoseTakenEvent extends DashboardEvent {
   final String doseId;
 

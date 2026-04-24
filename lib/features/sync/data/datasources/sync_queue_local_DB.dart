@@ -8,13 +8,11 @@ class SyncQueueLocalDataSource {
 
   SyncQueueLocalDataSource(this.box);
 
-  /// ➕ Add with deduplication
   Future<void> add(SyncItem item) async {
-    // Replace existing item with same id (deduplication)
+    print("ADDING TO QUEUE");
     await box.put(item.id, item);
   }
 
-  /// 📦 Ordered fetch (FIFO)
   List<SyncItem> getAll() {
     final items = box.values.toList();
 
@@ -23,12 +21,10 @@ class SyncQueueLocalDataSource {
     return items;
   }
 
-  /// ❌ Remove after success
   Future<void> remove(String id) async {
     await box.delete(id);
   }
 
-  /// 🔁 Update retry count
   Future<void> incrementRetry(String id) async {
     final item = box.get(id);
     if (item != null) {

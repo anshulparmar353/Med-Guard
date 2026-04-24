@@ -168,9 +168,17 @@ class NotificationService {
           importance: Importance.max,
           priority: Priority.high,
           actions: [
-            AndroidNotificationAction('TAKEN', 'Taken'),
-            AndroidNotificationAction('SKIP', 'Skip'),
-            AndroidNotificationAction('SNOOZE', 'Snooze'),
+            AndroidNotificationAction(
+              'TAKEN',
+              'Taken',
+              showsUserInterface: true,
+            ),
+            AndroidNotificationAction('SKIP', 'Skip', showsUserInterface: true),
+            AndroidNotificationAction(
+              'SNOOZE',
+              'Snooze',
+              showsUserInterface: true,
+            ),
           ],
         ),
       ),

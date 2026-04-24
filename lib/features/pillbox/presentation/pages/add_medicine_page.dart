@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:med_guard/core/routes/app_go_router.dart';
+import 'package:med_guard/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:med_guard/features/dashboard/presentation/bloc/dashboard_event.dart';
+import 'package:med_guard/features/pillbox/presentation/bloc/pillbox_state.dart';
 import 'package:uuid/uuid.dart';
 import 'package:med_guard/features/pillbox/domain/entities/medicine.dart';
 import 'package:med_guard/features/pillbox/presentation/bloc/pillbox_bloc.dart';
@@ -15,10 +21,15 @@ class AddMedicinePage extends StatefulWidget {
 class _AddMedicinePageState extends State<AddMedicinePage> {
   final _nameController = TextEditingController();
   final _dosageController = TextEditingController();
+  final _notesController = TextEditingController();
 
   final List<DateTime> _times = [];
 
-  // 🔹 Pick Time
+  String selectedType = "Tablet";
+  DateTime? startDate;
+  DateTime? endDate;
+  bool remindersEnabled = true;
+
   Future<void> _pickTime() async {
     final picked = await showTimePicker(
       context: context,
@@ -28,7 +39,6 @@ class _AddMedicinePageState extends State<AddMedicinePage> {
     if (picked == null) return;
 
     final now = DateTime.now();
-
     final time = DateTime(
       now.year,
       now.month,
@@ -37,9 +47,25 @@ class _AddMedicinePageState extends State<AddMedicinePage> {
       picked.minute,
     );
 
+    setState(() => _times.add(time));
+  }
+
+  Future<void> _pickDate(bool isStart) async {
+    final picked = await showDatePicker(
+      context: context,
+      firstDate: DateTime(2024),
+      lastDate: DateTime(2100),
+      initialDate: DateTime.now(),
+    );
+
+    if (picked == null) return;
+
     setState(() {
-      _times.add(time);
-      _times.sort((a, b) => a.compareTo(b));
+      if (isStart) {
+        startDate = picked;
+      } else {
+        endDate = picked;
+      }
     });
   }
 
@@ -50,123 +76,246 @@ class _AddMedicinePageState extends State<AddMedicinePage> {
   }
 
   void _save() {
-    final name = _nameController.text.trim();
-    final dosage = _dosageController.text.trim();
-
-    if (name.isEmpty || dosage.isEmpty || _times.isEmpty) {
+    if (_nameController.text.isEmpty ||
+        _dosageController.text.isEmpty ||
+        _times.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text("Please fill all fields")));
+      ).showSnackBar(const SnackBar(content: Text("Fill all required fields")));
       return;
     }
 
     final medicine = Medicine(
       id: const Uuid().v4(),
-      name: name,
-      dosage: dosage,
+      name: _nameController.text.trim(),
+      dosage: _dosageController.text.trim(),
       times: _times,
       updateAt: DateTime.now(),
       isDeleted: false,
     );
 
-    context.read<PillboxBloc>().add(AddMedicineWithScheduleEvent(medicine));
+    print("ADD BUTTON CLICKED");
 
-    Navigator.pop(context);
+    context.read<PillboxBloc>().add(AddMedicineEvent(medicine));
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Add Medicine")),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              // 🔹 Name
-              TextField(
-                controller: _nameController,
-                style: const TextStyle(fontSize: 18),
-                decoration: const InputDecoration(
-                  labelText: "Medicine Name",
-                  border: OutlineInputBorder(),
-                ),
-              ),
+    return BlocListener<PillboxBloc, PillboxState>(
+      listener: (context, state) {
+        if (state is PillboxLoaded) {
+          context.read<DashboardBloc>().add(RefreshDashboard());
 
-              const SizedBox(height: 16),
+          context.go(AppRoutes.dashboardScreen);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF2F4F7),
 
-              // 🔹 Dosage
-              TextField(
-                controller: _dosageController,
-                style: const TextStyle(fontSize: 18),
-                decoration: const InputDecoration(
-                  labelText: "Dosage (e.g. 1 tablet)",
-                  border: OutlineInputBorder(),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // 🔹 Add Time Button
-              SizedBox(
-                width: double.infinity,
-                height: 60,
-                child: ElevatedButton.icon(
-                  onPressed: _pickTime,
-                  icon: const Icon(Icons.access_time),
-                  label: const Text("Add Time", style: TextStyle(fontSize: 18)),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // 🔹 Time List
-              Expanded(
-                child: _times.isEmpty
-                    ? const Center(
-                        child: Text(
-                          "No time added",
-                          style: TextStyle(fontSize: 16),
-                        ),
-                      )
-                    : ListView.builder(
-                        itemCount: _times.length,
-                        itemBuilder: (_, i) {
-                          final t = _times[i];
-
-                          return Card(
-                            child: ListTile(
-                              title: Text(_formatTime(t)),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.delete),
-                                onPressed: () {
-                                  setState(() {
-                                    _times.removeAt(i);
-                                  });
-                                },
-                              ),
-                            ),
-                          );
-                        },
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: const [
+                    Text(
+                      "Add Medicine",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
-              ),
+                    ),
+                  ],
+                ),
 
-              // 🔹 Save Button
-              SizedBox(
-                width: double.infinity,
-                height: 65,
-                child: ElevatedButton(
-                  onPressed: _save,
-                  child: const Text(
-                    "Save Medicine",
-                    style: TextStyle(fontSize: 20),
+                const SizedBox(height: 20),
+
+                _inputField("Medicine Name", _nameController, Icons.medication),
+
+                const SizedBox(height: 12),
+
+                _inputField("Dosage", _dosageController, Icons.local_hospital),
+
+                const SizedBox(height: 20),
+
+                const Text("Medicine Type *"),
+                const SizedBox(height: 10),
+                _typeSelector(),
+
+                const SizedBox(height: 20),
+
+                const Text("Medication Times *"),
+                const SizedBox(height: 10),
+
+                Row(
+                  children: [
+                    Expanded(child: _fakeInput("Add Time", Icons.access_time)),
+                    const SizedBox(width: 10),
+                    IconButton(
+                      onPressed: _pickTime,
+                      icon: const Icon(Icons.add, size: 30),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 10),
+
+                Wrap(
+                  spacing: 8,
+                  children: _times
+                      .map((t) => Chip(label: Text(_formatTime(t))))
+                      .toList(),
+                ),
+
+                const SizedBox(height: 20),
+
+                _dateField("Start Date", startDate, true),
+                const SizedBox(height: 10),
+                _dateField("End Date (Optional)", endDate, false),
+
+                const SizedBox(height: 20),
+
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text("Enable Reminders"),
+                      Switch(
+                        value: remindersEnabled,
+                        onChanged: (v) => setState(() => remindersEnabled = v),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 20),
+
+                TextField(
+                  controller: _notesController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: "Notes (Optional)",
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                ElevatedButton(
+                  onPressed: _save,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text(
+                    "Save Medicine",
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _inputField(
+    String hint,
+    TextEditingController controller,
+    IconData icon,
+  ) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        hintText: hint,
+        prefixIcon: Icon(icon),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+
+  Widget _fakeInput(String hint, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.black),
+          const SizedBox(width: 10),
+          Text(hint, style: const TextStyle(color: Colors.black)),
+        ],
+      ),
+    );
+  }
+
+  Widget _dateField(String title, DateTime? date, bool isStart) {
+    return GestureDetector(
+      onTap: () => _pickDate(isStart),
+      child: _fakeInput(
+        date == null ? title : DateFormat('dd MMM yy').format(date),
+        Icons.calendar_today,
+      ),
+    );
+  }
+
+  Widget _typeSelector() {
+    final types = ["Tablet", "Capsule", "Syrup", "Injection"];
+
+    return Column(
+      children: types.map((type) {
+        final selected = type == selectedType;
+
+        return GestureDetector(
+          onTap: () => setState(() => selectedType = type),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: selected ? Colors.blue.shade50 : Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: selected ? Colors.blue : Colors.grey.shade300,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.medication,
+                  color: selected ? Colors.blue : Colors.grey,
+                ),
+                const SizedBox(width: 10),
+                Text(type),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }

@@ -31,7 +31,7 @@ class TrackingRepositoryImpl implements TrackingRepository {
   Future<List<DoseLog>> getTodayDoses() async {
     final now = DateTime.now();
 
-    final doses = await local.getAllDoses(); // ✅ await here
+    final doses = await local.getAllDoses(); 
 
     final list = doses.where((d) {
       return d.scheduledTime.year == now.year &&
@@ -64,10 +64,9 @@ class TrackingRepositoryImpl implements TrackingRepository {
 
     await local.update(updated);
 
-    // ✅ Push to sync queue
     await synclocal.add(
       SyncItem(
-        id: updated.id, // 🔥 critical for deduplication
+        id: updated.id, 
         type: SyncType.updateDose,
         data: updated.toJson(),
         createdAt: DateTime.now(),
@@ -88,7 +87,7 @@ class TrackingRepositoryImpl implements TrackingRepository {
 
     await synclocal.add(
       SyncItem(
-        id: updated.id, // 🔥 critical for deduplication
+        id: updated.id,
         type: SyncType.updateDose,
         data: updated.toJson(),
         createdAt: DateTime.now(),
@@ -112,7 +111,6 @@ class TrackingRepositoryImpl implements TrackingRepository {
     final dose = await local.getById(id);
     if (dose == null) return;
 
-    // Only pending can become missed
     if (dose.status != DoseStatus.pending.name) return;
 
     final now = DateTime.now();
@@ -133,6 +131,5 @@ class TrackingRepositoryImpl implements TrackingRepository {
       ),
     );
 
-    // synclocal.triggerSync();
   }
 }

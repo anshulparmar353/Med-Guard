@@ -1,68 +1,39 @@
 import 'package:flutter/material.dart';
 
 class DashboardHeader extends StatelessWidget {
-  const DashboardHeader({
-    super.key,
-    required this.userName,
-    required this.totalMeds,
-  });
-
-  final String userName;
-  final int totalMeds;
+  const DashboardHeader({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue.shade100,
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
+        color: const Color.fromARGB(31, 128, 120, 120),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
         ),
       ),
       child: Row(
         children: [
-          // 🔹 Left Side (Text)
-          Expanded(
+          const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "Good Morning 👋",
-                  style: TextStyle(fontSize: 18, color: Colors.black87),
-                ),
-
-                const SizedBox(height: 6),
-
+                Text("Good Evening,", style: TextStyle(color: Colors.black54)),
+                SizedBox(height: 4),
                 Text(
-                  userName,
-                  style: const TextStyle(
-                    fontSize: 24, // 🔥 bigger name
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                const SizedBox(height: 6),
-
-                Text(
-                  totalMeds == 0
-                      ? "No medicines today"
-                      : "You have $totalMeds medicines today",
-                  style: const TextStyle(fontSize: 16, color: Colors.black87),
+                  "Anshul",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
                 ),
               ],
             ),
           ),
-
-          // 🔹 Right Side (Profile Circle)
-          CircleAvatar(
-            radius: 24,
+          const Icon(Icons.notifications_none),
+          const SizedBox(width: 12),
+          const CircleAvatar(
             backgroundColor: Colors.blue,
-            child: Text(
-              userName.isNotEmpty ? userName[0].toUpperCase() : "A",
-              style: const TextStyle(color: Colors.white, fontSize: 18),
-            ),
+            child: Text("A", style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

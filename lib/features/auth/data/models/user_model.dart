@@ -1,7 +1,9 @@
 import 'package:hive/hive.dart';
 import 'package:med_guard/features/auth/domain/entities/user.dart';
 
-@HiveType(typeId: 1)
+part 'user_model.g.dart';
+
+@HiveType(typeId: 2)
 class UserModel extends HiveObject {
   @HiveField(0)
   final String id;

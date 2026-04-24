@@ -17,15 +17,17 @@ class _UpdateMedicinePageState extends State<UpdateMedicinePage> {
   late TextEditingController _nameController;
   late TextEditingController _dosageController;
 
-  List<DateTime> _times = [];
+  late List<DateTime> _times;
 
   @override
   void initState() {
     super.initState();
 
+    // 🔥 Pre-fill data
     _nameController = TextEditingController(text: widget.medicine.name);
     _dosageController = TextEditingController(text: widget.medicine.dosage);
-    _times = [...widget.medicine.times];
+
+    _times = List.from(widget.medicine.times);
   }
 
   Future<void> _pickTime() async {
@@ -52,76 +54,154 @@ class _UpdateMedicinePageState extends State<UpdateMedicinePage> {
     });
   }
 
-  String _formatTime(DateTime date) {
-    final hour = date.hour > 12 ? date.hour - 12 : date.hour;
-    final period = date.hour >= 12 ? "PM" : "AM";
-    return "$hour:${date.minute.toString().padLeft(2, '0')} $period";
+  String _formatTime(DateTime t) {
+    final hour = t.hour > 12 ? t.hour - 12 : t.hour;
+    final period = t.hour >= 12 ? "PM" : "AM";
+    return "$hour:${t.minute.toString().padLeft(2, '0')} $period";
   }
 
   void _update() {
-    final updated = Medicine(
+    final name = _nameController.text.trim();
+    final dosage = _dosageController.text.trim();
+
+    if (name.isEmpty || dosage.isEmpty || _times.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Please fill all details")));
+      return;
+    }
+
+    final updatedMedicine = Medicine(
       id: widget.medicine.id, // 🔥 SAME ID
-      name: _nameController.text.trim(),
-      dosage: _dosageController.text.trim(),
+      name: name,
+      dosage: dosage,
       times: _times,
-      updateAt: DateTime.now(),
-      isDeleted: false, // ✅ FIXED
+      updateAt: DateTime.now(), // 🔥 IMPORTANT for sync
+      isDeleted: false,
     );
 
-    context.read<PillboxBloc>().add(UpdateMedicineWithRescheduleEvent(updated));
+    context.read<PillboxBloc>().add(UpdateMedicineWithRescheduleEvent(updatedMedicine));
 
     Navigator.pop(context);
   }
 
   @override
+  void dispose() {
+    _nameController.dispose();
+    _dosageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Update Medicine")),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: "Medicine Name",
-                border: OutlineInputBorder(),
+      appBar: AppBar(title: const Text("Update Medicine"), centerTitle: true),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                "Edit Medicine",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
-            ),
-            const SizedBox(height: 16),
 
-            TextField(
-              controller: _dosageController,
-              decoration: const InputDecoration(
-                labelText: "Dosage",
-                border: OutlineInputBorder(),
+              const SizedBox(height: 20),
+
+              // 💊 NAME
+              TextField(
+                controller: _nameController,
+                style: const TextStyle(fontSize: 18),
+                decoration: InputDecoration(
+                  labelText: "Medicine Name",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  contentPadding: const EdgeInsets.all(18),
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
 
-            ElevatedButton(onPressed: _pickTime, child: const Text("Add Time")),
+              const SizedBox(height: 16),
 
-            Expanded(
-              child: ListView.builder(
-                itemCount: _times.length,
-                itemBuilder: (_, i) {
-                  return ListTile(
-                    title: Text(_formatTime(_times[i])),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () {
-                        setState(() {
-                          _times.removeAt(i);
-                        });
-                      },
-                    ),
-                  );
-                },
+              // 💊 DOSAGE
+              TextField(
+                controller: _dosageController,
+                style: const TextStyle(fontSize: 18),
+                decoration: InputDecoration(
+                  labelText: "Dosage",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  contentPadding: const EdgeInsets.all(18),
+                ),
               ),
-            ),
 
-            ElevatedButton(onPressed: _update, child: const Text("Update")),
-          ],
+              const SizedBox(height: 24),
+
+              const Text(
+                "Reminder Times",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+              ),
+
+              const SizedBox(height: 12),
+
+              // ⏰ ADD TIME
+              SizedBox(
+                height: 60,
+                child: ElevatedButton.icon(
+                  onPressed: _pickTime,
+                  icon: const Icon(Icons.access_time, size: 28),
+                  label: const Text("Add Time", style: TextStyle(fontSize: 18)),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // 🕒 TIMES LIST
+              Expanded(
+                child: _times.isEmpty
+                    ? const Center(child: Text("No time added"))
+                    : ListView.builder(
+                        itemCount: _times.length,
+                        itemBuilder: (_, i) {
+                          final t = _times[i];
+
+                          return Card(
+                            child: ListTile(
+                              title: Text(
+                                _formatTime(t),
+                                style: const TextStyle(fontSize: 18),
+                              ),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.delete),
+                                onPressed: () {
+                                  setState(() {
+                                    _times.removeAt(i);
+                                  });
+                                },
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // 🔥 UPDATE BUTTON
+              SizedBox(
+                height: 65,
+                child: ElevatedButton(
+                  onPressed: _update,
+                  child: const Text(
+                    "Update Medicine",
+                    style: TextStyle(fontSize: 20),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

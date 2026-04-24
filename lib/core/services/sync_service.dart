@@ -11,6 +11,14 @@ import 'package:med_guard/features/sync/domain/utils/conflict_resolver.dart';
 import 'package:logger/logger.dart';
 
 class SyncService {
+  SyncService({
+    required this.queue,
+    required this.remote,
+    required this.local,
+    required this.trackingRemote,
+    required this.trackingLocal,
+  });
+
   final SyncQueueLocalDataSource queue;
   final MedicineRemoteDataSource remote;
   final MedicineLocalDataSource local;
@@ -21,17 +29,10 @@ class SyncService {
 
   final Logger logger = Logger();
 
-  SyncService({
-    required this.queue,
-    required this.remote,
-    required this.local,
-    required this.trackingRemote,
-    required this.trackingLocal,
-  });
-
-  /// 🔁 PUBLIC SYNC ENTRY
   Future<void> sync(String userId) async {
     if (_isSyncing) return;
+
+    print("SYNC STARTED");
 
     _isSyncing = true;
 
@@ -44,6 +45,7 @@ class SyncService {
   }
 
   Future<void> _pushWithRetry(String userId) async {
+    print("PUSHING DATA");
     final items = queue.getAll().take(20).toList();
 
     for (final item in items) {
@@ -61,7 +63,7 @@ class SyncService {
             }
           } catch (e) {
             logger.e('Invalid sync item data: ${item.data}', error: e);
-            return; // ✅ exit this retry attempt safely
+            return;
           }
         });
 
@@ -101,11 +103,9 @@ class SyncService {
   }
 
   Future<void> _pullWithRetry(String userId) async {
+    print("PULL DATA");
     final lastSync = await _getLastSyncTime();
 
-    // =====================
-    // 🟢 MEDICINES SYNC
-    // =====================
     final remoteMedicines = await retry(
       () => remote.fetchMedicines(userId, lastSync),
     );
@@ -125,9 +125,6 @@ class SyncService {
 
     await local.replaceAll(resolvedMedicines);
 
-    // =====================
-    // 🔥 DOSE SYNC (FIXED)
-    // =====================
     final remoteDoses = await retry(
       () => trackingRemote.fetchDoses(userId, lastSync),
     );

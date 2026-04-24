@@ -1,92 +1,253 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:med_guard/core/routes/app_go_router.dart';
+import 'package:med_guard/features/dashboard/domain/entities/dose_status.dart';
 import 'package:med_guard/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:med_guard/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:med_guard/features/dashboard/presentation/bloc/dashboard_state.dart';
+import 'package:med_guard/features/dashboard/presentation/widgets/action_card.dart';
 import 'package:med_guard/features/dashboard/presentation/widgets/dashboard_header.dart';
-import 'package:med_guard/features/dashboard/presentation/widgets/emergency_button.dart';
-import 'package:med_guard/features/dashboard/presentation/widgets/medicine_timeline.dart';
-import 'package:med_guard/features/dashboard/presentation/widgets/primary_action.dart';
-import 'package:med_guard/features/dashboard/presentation/widgets/section_title.dart';
+import 'package:med_guard/features/dashboard/presentation/widgets/medicine_card.dart';
 import 'package:med_guard/features/dashboard/presentation/widgets/status_card.dart';
 import 'package:med_guard/features/dashboard/presentation/widgets/weekly_adherence_card.dart';
-import 'package:med_guard/shared/widget/empty_state.dart';
 import 'package:med_guard/shared/widget/error_widget.dart';
-import 'package:med_guard/shared/widget/loading_widget.dart';
 
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
 
   @override
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<DashboardBloc>().add(LoadDashboard());
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
-      body: SafeArea(
-        child: BlocBuilder<DashboardBloc, DashboardState>(
-          builder: (context, state) {
-            if (state is DashboardLoading) {
-              return const LoadingWidget(message: "Loading your medicines...");
-            }
+    return BlocBuilder<DashboardBloc, DashboardState>(
+      builder: (context, state) {
+        if (state is DashboardLoading) {
+          return Center(child: CircularProgressIndicator());
+        }
 
-            if (state is DashboardError) {
-              return ErrorState(
-                message: state.message,
-                onRetry: () {
-                  context.read<DashboardBloc>().add(LoadDashboard());
-                },
-              );
-            }
+        if (state is DashboardError) {
+          return ErrorState(
+            message: state.message,
+            onRetry: () {
+              context.read<DashboardBloc>().add(LoadDashboard());
+            },
+          );
+        }
 
-            if (state is DashboardLoaded) {
-              if (state.todayDoses.isEmpty && state.taken == 0) {
-                return EmptyState(
-                  title: "No medicines yet",
-                  subtitle: "Start by adding your medicines",
-                  actionLabel: "Add Medicine",
-                  onAction: () {},
-                );
-              }
-              return Column(
+        if (state is DashboardLoaded) {
+          final doses = state.todayDoses;
+
+          final morning = doses
+              .where((d) => d.scheduledTime.hour < 12)
+              .toList();
+          final afternoon = doses
+              .where(
+                (d) => d.scheduledTime.hour >= 12 && d.scheduledTime.hour < 17,
+              )
+              .toList();
+          final evening = doses
+              .where(
+                (d) => d.scheduledTime.hour >= 17 && d.scheduledTime.hour < 21,
+              )
+              .toList();
+          final night = doses.where((d) => d.scheduledTime.hour >= 21).toList();
+
+          final taken = doses.where((d) => d.status == DoseStatus.taken).length;
+          final pending = doses
+              .where((d) => d.status == DoseStatus.pending)
+              .length;
+          final missed = doses
+              .where((d) => d.status == DoseStatus.missed)
+              .length;
+
+          print("dashboard page");
+
+          return Scaffold(
+            backgroundColor: Colors.white,
+
+            body: SafeArea(
+              child: ListView(
+                padding: const EdgeInsets.all(16),
                 children: [
-                  DashboardHeader(
-                    userName: "Anshul",
-                    totalMeds: state.todayDoses.length,
+                  DashboardHeader(),
+
+                  const SizedBox(height: 20),
+
+                  Text(
+                    "Quick Access",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w400),
                   ),
 
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
+                  const SizedBox(height: 10),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ActionCard(
+                          color: Colors.white,
+                          icon: Icons.medication,
+                          label: "Add Medicine",
+                          onTap: () {
+                            context.go(AppRoutes.addMedicine);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ActionCard(
+                          color: Colors.white,
+                          icon: Icons.access_time,
+                          label: "Set Remainder",
+                          onTap: () {
+                            context.push(AppRoutes.addMedicine);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ActionCard(
+                          color: Colors.white,
+                          icon: Icons.camera_alt,
+                          label: "Scan Prescription",
+                          onTap: () {
+                            context.go(AppRoutes.scanner);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ActionCard(
+                          color: Colors.red,
+                          icon: Icons.warning_rounded,
+                          label: "Emergency",
+                          textColor: Colors.white,
+                          onTap: () {
+                            context.push(AppRoutes.emergencyScreen);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          StatusCard(taken: state.taken, missed: state.missed),
-                          const SizedBox(height: 20),
-
-                          const PrimaryAction(),
-                          const SizedBox(height: 20),
-
-                          WeeklyAdherenceCard(data: state.weekly),
-                          SizedBox(height: 20),
-
-                          const SectionTitle(title: "Today's Medicines"),
-                          const SizedBox(height: 10),
-
-                          MedicineTimeline(doses: state.todayDoses),
-                          const SizedBox(height: 100),
+                          const Text(
+                            "Today's Medicines",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                          Text(
+                            DateFormat('MMM dd').format(DateTime.now()),
+                            style: const TextStyle(color: Colors.grey),
+                          ),
                         ],
                       ),
-                    ),
+                      TextButton(
+                        onPressed: () {
+                          context.push(AppRoutes.pillbox);
+                        },
+                        child: const Text("View All"),
+                      ),
+                    ],
                   ),
 
-                  const EmergencyButton(),
-                ],
-              );
-            }
+                  const SizedBox(height: 20),
 
-            return const SizedBox();
-          },
+                  Row(
+                    children: [
+                      Expanded(
+                        child: StatusCard(
+                          label: "Taken",
+                          count: taken,
+                          color: Colors.green,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: StatusCard(
+                          label: "Pending",
+                          count: pending,
+                          color: Colors.orange,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: StatusCard(
+                          label: "Missed",
+                          count: missed,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  WeeklyAdherenceCard(data: state.weekly),
+
+                  const SizedBox(height: 20),
+
+                  _buildSection(context, "MORNING", morning),
+                  _buildSection(context, "AFTERNOON", afternoon),
+                  _buildSection(context, "EVENING", evening),
+                  _buildSection(context, "NIGHT", night),
+
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return Center(child: Text("DASHBOARD PAGE"));
+      },
+    );
+  }
+
+  Widget _buildSection(BuildContext context, String title, List doses) {
+    if (doses.isEmpty) return const SizedBox();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 20, bottom: 10),
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
+            ),
+          ),
         ),
-      ),
+
+        ...doses.map((d) => MedicineCard(d: d)),
+      ],
     );
   }
 }

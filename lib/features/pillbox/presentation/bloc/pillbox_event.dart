@@ -24,9 +24,9 @@ class UpdateMedicineWithRescheduleEvent extends PillboxEvent {
 }
 
 class DeleteMedicineEvent extends PillboxEvent {
-  final String id;
+  final Medicine medicine;
 
-  DeleteMedicineEvent(this.id);
+  DeleteMedicineEvent(this.medicine);
 }
 
 class DeleteMedicineWithCleanupEvent extends PillboxEvent {

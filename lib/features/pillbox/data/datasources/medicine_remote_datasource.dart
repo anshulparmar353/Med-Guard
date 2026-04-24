@@ -10,9 +10,8 @@ class MedicineRemoteDataSource {
   }
 
   Future<void> uploadMedicine(String userId, Map<String, dynamic> data) async {
-    await _ref(
-      userId,
-    ).doc(data['id']).set(data, SetOptions(merge: true)); // ✅ important
+    print("Uploading to Firebase: $data");
+    await _ref(userId).doc(data['id']).set(data, SetOptions(merge: true));
   }
 
   Future<void> deleteMedicine(String userId, String id) async {
@@ -38,4 +37,13 @@ class MedicineRemoteDataSource {
 
     return snapshot.docs.map((e) => e.data()).toList();
   }
+
+  // Future<void> deleteMedicine(String userId, String id) async {
+  //   await firestore
+  //       .collection('users')
+  //       .doc(userId)
+  //       .collection('medicines')
+  //       .doc(id)
+  //       .delete();
+  // }
 }

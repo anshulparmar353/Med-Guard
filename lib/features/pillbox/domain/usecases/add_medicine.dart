@@ -6,7 +6,8 @@ class AddMedicine {
 
   AddMedicine(this.repo);
 
-  Future<void> call(Medicine medicine) {
+  Future<void> call(Medicine medicine) async {
+    print("USECASE RUNNING");
     return repo.addMedicine(medicine);
   }
 }

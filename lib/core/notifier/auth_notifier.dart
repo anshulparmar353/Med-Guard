@@ -12,12 +12,14 @@ class AuthNotifier extends ChangeNotifier {
   bool isLoading = true;
 
   AuthNotifier(this.authBloc) {
-    _update(authBloc.state);
+    update(authBloc.state);
 
-    _subscription = authBloc.stream.listen(_update);
+    _subscription = authBloc.stream.listen((state) {
+      update(state);
+    });
   }
 
-  void _update(AuthState state) {
+  void update(AuthState state) {
     if (state is AuthAuthenticated) {
       isAuthenticated = true;
       isLoading = false;
@@ -33,7 +35,7 @@ class AuthNotifier extends ChangeNotifier {
 
   @override
   void dispose() {
-    _subscription.cancel(); // 🔥 FIX
+    _subscription.cancel(); 
     super.dispose();
   }
 }

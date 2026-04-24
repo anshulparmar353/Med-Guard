@@ -19,7 +19,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
     await local.cacheUser(userModel);
 
-    return userModel.toEntity(); // ✅ ensure mapping exists
+    return userModel.toEntity(); 
   }
 
   @override
@@ -32,16 +32,14 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<User?> getCachedUser() async {
+  Future<User?> getCurrentUser() async {
     final firebaseUser = fb.FirebaseAuth.instance.currentUser;
 
     if (firebaseUser == null) return null;
 
-    // Optional: use local cache
     final cached = local.getUser();
     if (cached != null) return cached.toEntity();
 
-    // fallback from Firebase
     return User(
       id: firebaseUser.uid,
       email: firebaseUser.email ?? '',
@@ -50,7 +48,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> logout() async {
-    await fb.FirebaseAuth.instance.signOut(); // ✅ Firebase logout
+    await fb.FirebaseAuth.instance.signOut(); 
     await local.clear();
   }
 }

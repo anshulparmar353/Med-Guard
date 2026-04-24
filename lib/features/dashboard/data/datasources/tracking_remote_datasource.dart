@@ -5,11 +5,15 @@ class TrackingRemoteDataSource {
 
   TrackingRemoteDataSource(this.firestore);
 
-  Future<void> uploadDose(String userId, Map<String, dynamic> data) async {
-    await firestore
+  CollectionReference<Map<String, dynamic>> _ref(String userId) {
+    return firestore
         .collection('users')
         .doc(userId)
-        .collection('doses')
+        .collection('dose_logs'); 
+  }
+
+  Future<void> uploadDose(String userId, Map<String, dynamic> data) async {
+    await _ref(userId)
         .doc(data['id'])
         .set(data, SetOptions(merge: true));
   }
@@ -18,7 +22,7 @@ class TrackingRemoteDataSource {
     String userId,
     DateTime? lastSync,
   ) async {
-    Query query = firestore.collection('users').doc(userId).collection('doses');
+    Query<Map<String, dynamic>> query = _ref(userId);
 
     if (lastSync != null) {
       query = query.where('updatedAt', isGreaterThan: lastSync);
@@ -26,6 +30,6 @@ class TrackingRemoteDataSource {
 
     final snapshot = await query.get();
 
-    return snapshot.docs.map((e) => e.data() as Map<String, dynamic>).toList();
+    return snapshot.docs.map((e) => e.data()).toList();
   }
 }

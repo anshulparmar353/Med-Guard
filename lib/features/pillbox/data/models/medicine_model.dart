@@ -2,7 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hive/hive.dart';
 import '../../domain/entities/medicine.dart';
 
-@HiveType(typeId: 2)
+part 'medicine_model.g.dart';
+
+@HiveType(typeId: 3)
 class MedicineModel extends HiveObject {
   @HiveField(0)
   String id;
@@ -58,9 +60,11 @@ class MedicineModel extends HiveObject {
       id: json['id'],
       name: json['name'],
       dosage: json['dosage'],
-      times: (json['times'] as List)
-          .map((e) => (e as Timestamp).toDate())
-          .toList(),
+      times: (json['times'] as List).map((e) {
+        if (e is Timestamp) return e.toDate();
+        if (e is String) return DateTime.parse(e);
+        return e as DateTime;
+      }).toList(),
       updatedAt: (json['updatedAt'] as Timestamp).toDate(),
       isDeleted: json['isDeleted'] ?? false,
     );
@@ -71,8 +75,8 @@ class MedicineModel extends HiveObject {
       "id": id,
       "name": name,
       "dosage": dosage,
-      "times": times.map((e) => Timestamp.fromDate(e)).toList(),
-      "updatedAt": Timestamp.fromDate(updatedAt),
+      "times": times.map((e) => e.toIso8601String()).toList(),
+      "updatedAt": updatedAt.toIso8601String(),
       "isDeleted": isDeleted,
     };
   }
