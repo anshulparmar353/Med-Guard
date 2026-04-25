@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -73,7 +74,7 @@ import 'package:med_guard/utils/auth_helper.dart';
 
 final getIt = GetIt.instance;
 
-void init() {
+Future<void> init() async {
   // Firebase
   getIt.registerLazySingleton(() => FirebaseAuth.instance);
 
@@ -85,18 +86,20 @@ void init() {
 
   // Auth Helper
   getIt.registerLazySingleton(() => AuthHelper(getIt()));
+
   // ================= CORE =================
 
   getIt.registerLazySingleton(() => SyncManager());
-
-  getIt.registerLazySingleton<GoRouter>(
-    () => AppGoRouter.createRouter(getIt<AuthNotifier>()),
-  );
 
   getIt.registerLazySingleton(() => ReminderLocalDataSource());
 
   getIt.registerLazySingleton(() => SecureTokenStorage(getIt()));
 
+  getIt.registerLazySingleton<Connectivity>(() => Connectivity());
+
+  getIt.registerLazySingleton<ConnectivityService>(
+    () => ConnectivityService(getIt<Connectivity>()),
+  );
   // ================= HIVE BOXES =================
 
   getIt.registerLazySingleton<Box<UserModel>>(
@@ -144,7 +147,7 @@ void init() {
     () => LogoutUseCase(getIt<AuthRepository>()),
   );
 
-  getIt.registerFactory<AuthBloc>(
+  getIt.registerLazySingleton<AuthBloc>(
     () => AuthBloc(
       getIt<LoginUseCase>(),
       getIt<SignupUsecase>(),
@@ -152,7 +155,16 @@ void init() {
       getIt<AuthRepository>(),
       getIt<SyncService>(),
       getIt<ConnectivityService>(),
+      getIt<MedicineRepository>(),
     ),
+  );
+
+  getIt.registerLazySingleton<AuthNotifier>(
+    () => AuthNotifier(getIt<AuthBloc>()),
+  );
+
+  getIt.registerLazySingleton<GoRouter>(
+    () => AppGoRouter.createRouter(getIt<AuthNotifier>()),
   );
 
   // ================= SYNC =================
@@ -297,15 +309,12 @@ void init() {
       markDoseTaken: getIt(),
       markDoseSkipped: getIt(),
       refreshDailyDoses: getIt(),
+      authRepository: getIt(),
+      syncService: getIt(),
     ),
   );
 
   // ================= NOTIFICATION =================
 
-  getIt.registerLazySingleton(
-    () => NotificationActionHandler(
-      markDoseTaken: getIt(),
-      markDoseSkipped: getIt(),
-    ),
-  );
+  getIt.registerLazySingleton(() => NotificationActionHandler(getIt()));
 }

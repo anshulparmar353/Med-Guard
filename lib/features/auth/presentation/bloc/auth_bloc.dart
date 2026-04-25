@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:med_guard/core/services/connectivity_service.dart';
+import 'package:med_guard/core/services/notification_service.dart';
 import 'package:med_guard/core/services/sync_service.dart';
 import 'package:med_guard/features/auth/domain/repository/auth_repository.dart';
 import 'package:med_guard/features/auth/domain/usecases/login_usecase.dart';
@@ -7,6 +8,7 @@ import 'package:med_guard/features/auth/domain/usecases/logout_usecase.dart';
 import 'package:med_guard/features/auth/domain/usecases/signup_usecase.dart';
 import 'package:med_guard/features/auth/presentation/bloc/auth_event.dart';
 import 'package:med_guard/features/auth/presentation/bloc/auth_state.dart';
+import 'package:med_guard/features/pillbox/domain/repository/medicine_repository.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final LoginUseCase loginUseCase;
@@ -15,6 +17,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository repository;
   final SyncService syncService;
   final ConnectivityService connectivityService;
+  final MedicineRepository medRepo;
 
   AuthBloc(
     this.loginUseCase,
@@ -23,6 +26,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     this.repository,
     this.syncService,
     this.connectivityService,
+    this.medRepo,
   ) : super(AuthInitial()) {
     on<AppStarted>((event, emit) async {
       emit(AuthLoading());
@@ -36,6 +40,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           emit(AuthAuthenticated(user));
         } else {
           emit(AuthUnauthenticated());
+        }
+
+        final medicines = await medRepo.getMedicines();
+
+        for (final med in medicines) {
+          for (final time in med.times) {
+            if (time.isAfter(DateTime.now())) {
+              await NotificationService.schedule(
+                id: NotificationService.generateId(),
+                title: "Medicine Reminder 💊",
+                body: "Take ${med.name}",
+                time: time,
+                payload: med.id,
+              );
+            }
+          }
         }
       } catch (e) {
         emit(AuthUnauthenticated());

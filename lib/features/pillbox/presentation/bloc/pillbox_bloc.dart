@@ -45,14 +45,17 @@ class PillboxBloc extends Bloc<PillboxEvent, PillboxState> {
 
   void _onLoad(LoadMedicines event, Emitter<PillboxState> emit) async {
     emit(PillboxLoading());
+    try {
+      final meds = await getMedicines();
 
-    final meds = await getMedicines();
+      syncManager.scheduleSync(() async {
+        await syncMedicines(meds);
+      });
 
-    syncManager.scheduleSync(() async {
-      await syncMedicines(meds);
-    });
-
-    emit(PillboxLoaded(meds));
+      emit(PillboxLoaded(meds));
+    } catch (e) {
+      emit(PillboxError("Failed to load medicines"));
+    }
   }
 
   Future<void> _onAddWithSchedule(
@@ -82,6 +85,9 @@ class PillboxBloc extends Bloc<PillboxEvent, PillboxState> {
     print("ADDING MEDICINE BLoc");
 
     try {
+
+      await Future.delayed(Duration.zero);
+
       await addMedicine(event.medicine);
 
       syncManager.scheduleSync(() async {

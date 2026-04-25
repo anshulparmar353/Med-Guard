@@ -55,7 +55,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             key: _formKey,
             child: Column(
               children: [
-                /// LOGO
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -71,7 +70,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
                 const SizedBox(height: 16),
 
-                /// TITLE
                 const Text(
                   "Med Guard",
                   style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
@@ -86,7 +84,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
                 const SizedBox(height: 40),
 
-                /// EMAIL FIELD
                 TextFormField(
                   controller: emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -110,7 +107,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
                 const SizedBox(height: 30),
 
-                /// BUTTON
                 SizedBox(
                   width: double.infinity,
                   height: 55,
@@ -133,14 +129,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           )
                         : const Text(
                             "Send Reset Link",
-                            style: TextStyle(fontSize: 16),
+                            style: TextStyle(fontSize: 16, color: Colors.white),
                           ),
                   ),
                 ),
 
                 const SizedBox(height: 20),
 
-                /// BACK TO LOGIN
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

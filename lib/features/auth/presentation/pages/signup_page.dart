@@ -238,14 +238,16 @@ class _SignupPageState extends State<SignupPage> {
                                       )
                                     : const Text(
                                         "Create Account",
-                                        style: TextStyle(fontSize: 16),
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.white,
+                                        ),
                                       ),
                               ),
                             ),
 
                             const SizedBox(height: 20),
 
-                            /// DIVIDER
                             Row(
                               children: const [
                                 Expanded(child: Divider()),
@@ -259,7 +261,6 @@ class _SignupPageState extends State<SignupPage> {
 
                             const SizedBox(height: 20),
 
-                            /// GOOGLE SIGNUP
                             SizedBox(
                               width: double.infinity,
                               height: 50,

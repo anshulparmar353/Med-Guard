@@ -16,3 +16,5 @@ class MarkDoseSkippedEvent extends DashboardEvent {
 }
 
 class RefreshDashboard extends DashboardEvent {}
+
+class GenerateAndLoadDashboardEvent extends DashboardEvent {}

@@ -104,7 +104,9 @@ class _AddMedicinePageState extends State<AddMedicinePage> {
     return BlocListener<PillboxBloc, PillboxState>(
       listener: (context, state) {
         if (state is PillboxLoaded) {
-          context.read<DashboardBloc>().add(RefreshDashboard());
+          print("✅ MEDICINE ADDED");
+
+          context.read<DashboardBloc>().add(GenerateAndLoadDashboardEvent());
 
           context.go(AppRoutes.dashboardScreen);
         }
@@ -226,7 +228,7 @@ class _AddMedicinePageState extends State<AddMedicinePage> {
                   ),
                   child: const Text(
                     "Save Medicine",
-                    style: TextStyle(fontSize: 16),
+                    style: TextStyle(fontSize: 16, color: Colors.white),
                   ),
                 ),
               ],

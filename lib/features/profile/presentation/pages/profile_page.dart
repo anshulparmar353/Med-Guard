@@ -81,34 +81,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
                   const Divider(height: 1),
 
-                  // Padding(
-                  //   padding: const EdgeInsets.symmetric(
-                  //     horizontal: 16,
-                  //     vertical: 12,
-                  //   ),
-                  //   child: Row(
-                  //     children: [
-                  //       _iconCircle(Icons.dark_mode, Colors.purple),
-                  //       const SizedBox(width: 12),
-                  //       const Expanded(
-                  //         child: Text(
-                  //           "Dark Mode",
-                  //           style: TextStyle(fontSize: 16),
-                  //         ),
-                  //       ),
-                  //       Switch(
-                  //         value: isDarkMode,
-                  //         onChanged: (value) {
-                  //           setState(() {
-                  //             isDarkMode = value;
-                  //           });
-                  //         },
-                  //       ),
-                  //     ],
-                  //   ),
-                  // ),
-
-                  // const Divider(height: 1),
                   _tile(
                     icon: Icons.logout,
                     color: Colors.red,

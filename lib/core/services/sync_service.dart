@@ -63,7 +63,7 @@ class SyncService {
             }
           } catch (e) {
             logger.e('Invalid sync item data: ${item.data}', error: e);
-            return;
+            rethrow;
           }
         });
 

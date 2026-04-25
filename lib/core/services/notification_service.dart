@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:med_guard/core/services/notification_action_handler.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -16,10 +18,12 @@ class NotificationService {
 
   static Future<void> init() async {
     tz.initializeTimeZones();
+    tz.setLocalLocation(tz.getLocation('Asia/Kolkata'));
 
-    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    const settings = InitializationSettings(android: android);
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
+    const settings = InitializationSettings(android: androidSettings);
 
     const androidChannel = AndroidNotificationChannel(
       'med_channel',
@@ -38,21 +42,30 @@ class NotificationService {
       settings: settings,
       onDidReceiveNotificationResponse: _onActionTap,
     );
+
+    final androidPlugin = _notifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+
+    final granted = await androidPlugin?.requestExactAlarmsPermission();
+
+    print("Exact alarm permission: $granted");
   }
 
-  /// 🔥 HANDLE ACTION BUTTONS
   static Future<void> _onActionTap(NotificationResponse response) async {
     final payload = response.payload;
 
     if (payload == null) return;
 
-    final parts = payload.split('|');
-    if (parts.length < 2) return;
+    final data = jsonDecode(payload);
 
-    final notificationId = int.tryParse(parts[0]);
-    final doseId = parts[1];
+    final int notificationId = data['notificationId'];
+    final String doseId = data['doseId'];
 
-    if (notificationId == null) return;
+    print("🔔 ACTION: ${response.actionId}");
+    print("📦 PAYLOAD: $payload");
+    print("🧾 DOSE ID: $doseId");
 
     final actionKey = "$doseId-${response.actionId}";
 
@@ -63,6 +76,9 @@ class NotificationService {
       case 'TAKEN':
         if (_handler != null) {
           await _handler!.onAction(doseId, "TAKEN");
+
+          await Future.delayed(const Duration(milliseconds: 100));
+
           await _notifications.cancel(id: notificationId);
         }
         break;
@@ -70,6 +86,9 @@ class NotificationService {
       case 'SKIP':
         if (_handler != null) {
           await _handler!.onAction(doseId, "SKIP");
+
+          await Future.delayed(const Duration(milliseconds: 100));
+
           await _notifications.cancel(id: notificationId);
         }
         break;
@@ -86,34 +105,23 @@ class NotificationService {
         break;
 
       default:
-        // App opened from notification
         break;
     }
   }
 
-  /// 🔔 Schedule notification
   static Future<void> schedule({
     required int id,
     required String title,
     required String body,
     required DateTime time,
-    required String payload, // doseId
+    required String payload,
   }) async {
     final now = tz.TZDateTime.now(tz.local);
 
-    var scheduledDate = tz.TZDateTime(
-      tz.local,
-      time.year,
-      time.month,
-      time.day,
-      time.hour,
-      time.minute,
-    );
+    final scheduledDate = tz.TZDateTime.from(time, tz.local);
 
-    // If time already passed → schedule next day
-    if (scheduledDate.isBefore(now)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
-    }
+    print("📅 NOW: $now");
+    print("⏰ SCHEDULED FOR: $scheduledDate");
 
     await _notifications.zonedSchedule(
       id: id,
@@ -133,13 +141,11 @@ class NotificationService {
           ],
         ),
       ),
-      payload: "$id|$payload", // 🔥 IMPORTANT FORMAT
+      payload: jsonEncode({"notificationId": id, "doseId": payload}),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.time, // daily repeat
     );
   }
 
-  /// ⏰ Snooze notification
   static Future<void> snooze({
     required int id,
     required String title,
@@ -150,11 +156,8 @@ class NotificationService {
     final now = tz.TZDateTime.now(tz.local);
     final newTime = now.add(Duration(minutes: minutes));
 
-    final parts = payload.split('|');
-    if (parts.length < 2) return;
-
-    final notificationId = int.tryParse(parts[0]);
-    if (notificationId == null) return;
+    final data = jsonDecode(payload);
+    final int notificationId = data['notificationId'];
 
     await _notifications.zonedSchedule(
       id: notificationId,
@@ -189,7 +192,34 @@ class NotificationService {
     await _notifications.cancel(id: id);
   }
 
-  /// ❌ Cancel notification
+  static Future<void> showInstant({
+    required int id,
+    required String title,
+    required String body,
+    required String payload,
+  }) async {
+    print("🔔 SHOW INSTANT CALLED");
+
+    await _notifications.show(
+      id: id,
+      title: title,
+      body: body,
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'med_channel',
+          'Medicine Reminder',
+          importance: Importance.max,
+          priority: Priority.high,
+        ),
+      ),
+      payload: jsonEncode({"notificationId": id, "doseId": payload}),
+    );
+  }
+
+  static int generateId() {
+    return DateTime.now().millisecondsSinceEpoch.remainder(2147483647);
+  }
+
   static Future<void> cancel(int id) async {
     await _notifications.cancel(id: id);
   }

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:med_guard/core/routes/app_go_router.dart';
+import 'package:med_guard/features/dashboard/domain/entities/dose_log.dart';
 import 'package:med_guard/features/dashboard/domain/entities/dose_status.dart';
 import 'package:med_guard/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:med_guard/features/dashboard/presentation/bloc/dashboard_event.dart';
@@ -32,6 +33,8 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     return BlocBuilder<DashboardBloc, DashboardState>(
       builder: (context, state) {
+        print("UI STATE: $state");
+
         if (state is DashboardLoading) {
           return Center(child: CircularProgressIndicator());
         }
@@ -48,26 +51,40 @@ class _DashboardPageState extends State<DashboardPage> {
         if (state is DashboardLoaded) {
           final doses = state.todayDoses;
 
-          final morning = doses
-              .where((d) => d.scheduledTime.hour < 12)
-              .toList();
-          final afternoon = doses
-              .where(
-                (d) => d.scheduledTime.hour >= 12 && d.scheduledTime.hour < 17,
-              )
-              .toList();
-          final evening = doses
-              .where(
-                (d) => d.scheduledTime.hour >= 17 && d.scheduledTime.hour < 21,
-              )
-              .toList();
-          final night = doses.where((d) => d.scheduledTime.hour >= 21).toList();
+          final uniqueDoses = {
+            for (var d in doses) "${d.medicineId}_${d.scheduledTime}": d,
+          }.values.toList().cast<DoseLog>();
 
-          final taken = doses.where((d) => d.status == DoseStatus.taken).length;
-          final pending = doses
+          List<DoseLog> filterByRange(List<DoseLog> list, int start, int end) {
+            return list
+                .where(
+                  (d) =>
+                      d.scheduledTime.hour >= start &&
+                      d.scheduledTime.hour < end,
+                )
+                .toList()
+              ..sort((a, b) => a.scheduledTime.compareTo(b.scheduledTime));
+          }
+
+          final morning = filterByRange(uniqueDoses, 5, 12);
+          final afternoon = filterByRange(uniqueDoses, 12, 17);
+          final evening = filterByRange(uniqueDoses, 17, 21);
+          final night =
+              uniqueDoses
+                  .where(
+                    (d) =>
+                        d.scheduledTime.hour >= 21 || d.scheduledTime.hour < 5,
+                  )
+                  .toList()
+                ..sort((a, b) => a.scheduledTime.compareTo(b.scheduledTime));
+
+          final taken = uniqueDoses
+              .where((d) => d.status == DoseStatus.taken)
+              .length;
+          final pending = uniqueDoses
               .where((d) => d.status == DoseStatus.pending)
               .length;
-          final missed = doses
+          final missed = uniqueDoses
               .where((d) => d.status == DoseStatus.missed)
               .length;
 
@@ -99,7 +116,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           icon: Icons.medication,
                           label: "Add Medicine",
                           onTap: () {
-                            context.go(AppRoutes.addMedicine);
+                            context.push(AppRoutes.addMedicine);
                           },
                         ),
                       ),
@@ -127,7 +144,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           icon: Icons.camera_alt,
                           label: "Scan Prescription",
                           onTap: () {
-                            context.go(AppRoutes.scanner);
+                            context.push(AppRoutes.scanner);
                           },
                         ),
                       ),
@@ -229,7 +246,11 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildSection(BuildContext context, String title, List doses) {
+  Widget _buildSection(
+    BuildContext context,
+    String title,
+    List<DoseLog> doses,
+  ) {
     if (doses.isEmpty) return const SizedBox();
 
     return Column(

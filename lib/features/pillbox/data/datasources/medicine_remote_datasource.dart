@@ -15,9 +15,11 @@ class MedicineRemoteDataSource {
   }
 
   Future<void> deleteMedicine(String userId, String id) async {
-    await _ref(
-      userId,
-    ).doc(id).update({"isDeleted": true, "updatedAt": Timestamp.now()});
+    await _ref(userId).doc(id).set({
+      "id": id,
+      "isDeleted": true,
+      "updatedAt": Timestamp.now(),
+    }, SetOptions(merge: true));
   }
 
   Future<List<Object?>> fetchMedicines(
@@ -37,13 +39,4 @@ class MedicineRemoteDataSource {
 
     return snapshot.docs.map((e) => e.data()).toList();
   }
-
-  // Future<void> deleteMedicine(String userId, String id) async {
-  //   await firestore
-  //       .collection('users')
-  //       .doc(userId)
-  //       .collection('medicines')
-  //       .doc(id)
-  //       .delete();
-  // }
 }

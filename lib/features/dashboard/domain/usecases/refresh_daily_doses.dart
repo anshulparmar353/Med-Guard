@@ -8,6 +8,9 @@ class RefreshDailyDoses {
   RefreshDailyDoses(this.getMedicines, this.trackingRepo);
 
   Future<void> call() async {
+
+    print("CREATING DOSES FROM MEDICINES");
+    
     final medicines = await getMedicines();
 
     final now = DateTime.now();

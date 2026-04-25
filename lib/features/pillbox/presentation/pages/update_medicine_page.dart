@@ -23,7 +23,6 @@ class _UpdateMedicinePageState extends State<UpdateMedicinePage> {
   void initState() {
     super.initState();
 
-    // 🔥 Pre-fill data
     _nameController = TextEditingController(text: widget.medicine.name);
     _dosageController = TextEditingController(text: widget.medicine.dosage);
 
@@ -72,15 +71,17 @@ class _UpdateMedicinePageState extends State<UpdateMedicinePage> {
     }
 
     final updatedMedicine = Medicine(
-      id: widget.medicine.id, // 🔥 SAME ID
+      id: widget.medicine.id,
       name: name,
       dosage: dosage,
       times: _times,
-      updateAt: DateTime.now(), // 🔥 IMPORTANT for sync
+      updateAt: DateTime.now(),
       isDeleted: false,
     );
 
-    context.read<PillboxBloc>().add(UpdateMedicineWithRescheduleEvent(updatedMedicine));
+    context.read<PillboxBloc>().add(
+      UpdateMedicineWithRescheduleEvent(updatedMedicine),
+    );
 
     Navigator.pop(context);
   }
@@ -97,8 +98,13 @@ class _UpdateMedicinePageState extends State<UpdateMedicinePage> {
     return Scaffold(
       appBar: AppBar(title: const Text("Update Medicine"), centerTitle: true),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 16,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -109,7 +115,6 @@ class _UpdateMedicinePageState extends State<UpdateMedicinePage> {
 
               const SizedBox(height: 20),
 
-              // 💊 NAME
               TextField(
                 controller: _nameController,
                 style: const TextStyle(fontSize: 18),
@@ -124,7 +129,6 @@ class _UpdateMedicinePageState extends State<UpdateMedicinePage> {
 
               const SizedBox(height: 16),
 
-              // 💊 DOSAGE
               TextField(
                 controller: _dosageController,
                 style: const TextStyle(fontSize: 18),
@@ -146,7 +150,6 @@ class _UpdateMedicinePageState extends State<UpdateMedicinePage> {
 
               const SizedBox(height: 12),
 
-              // ⏰ ADD TIME
               SizedBox(
                 height: 60,
                 child: ElevatedButton.icon(
@@ -158,46 +161,44 @@ class _UpdateMedicinePageState extends State<UpdateMedicinePage> {
 
               const SizedBox(height: 16),
 
-              // 🕒 TIMES LIST
-              Expanded(
-                child: _times.isEmpty
-                    ? const Center(child: Text("No time added"))
-                    : ListView.builder(
-                        itemCount: _times.length,
-                        itemBuilder: (_, i) {
-                          final t = _times[i];
-
-                          return Card(
-                            child: ListTile(
-                              title: Text(
-                                _formatTime(t),
-                                style: const TextStyle(fontSize: 18),
-                              ),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.delete),
-                                onPressed: () {
-                                  setState(() {
-                                    _times.removeAt(i);
-                                  });
-                                },
-                              ),
-                            ),
-                          );
-                        },
+              if (_times.isEmpty)
+                const Center(child: Text("No time added"))
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _times.length,
+                  itemBuilder: (_, i) {
+                    final t = _times[i];
+                    return Card(
+                      child: ListTile(
+                        title: Text(_formatTime(t)),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete),
+                          onPressed: () {
+                            setState(() {
+                              _times.removeAt(i);
+                            });
+                          },
+                        ),
                       ),
-              ),
+                    );
+                  },
+                ),
 
               const SizedBox(height: 10),
 
-              // 🔥 UPDATE BUTTON
-              SizedBox(
-                height: 65,
-                child: ElevatedButton(
-                  onPressed: _update,
-                  child: const Text(
-                    "Update Medicine",
-                    style: TextStyle(fontSize: 20),
+              ElevatedButton(
+                onPressed: _update,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
                   ),
+                ),
+                child: const Text(
+                  "Update Medicine",
+                  style: TextStyle(fontSize: 16, color: Colors.white),
                 ),
               ),
             ],

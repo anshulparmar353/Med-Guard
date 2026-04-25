@@ -1,3 +1,4 @@
+import 'package:med_guard/core/services/notification_service.dart';
 import 'package:med_guard/core/services/sync_service.dart';
 import 'package:med_guard/features/pillbox/domain/repository/medicine_repository.dart';
 import 'package:med_guard/features/sync/data/datasources/sync_queue_local_DB.dart';
@@ -7,6 +8,9 @@ import 'package:med_guard/features/sync/domain/entities/sync_type.dart';
 import '../../domain/entities/medicine.dart';
 import '../datasources/medicine_local_datasource.dart';
 import '../models/medicine_model.dart';
+
+import 'package:workmanager/workmanager.dart';
+import 'package:med_guard/core/services/background_worker.dart';
 
 class MedicineRepositoryImpl implements MedicineRepository {
   final MedicineLocalDataSource local;
@@ -27,6 +31,32 @@ class MedicineRepositoryImpl implements MedicineRepository {
 
     try {
       await local.addMedicine(model);
+
+      for (final time in model.times) {
+        final delay = time.difference(DateTime.now());
+
+        if (delay.isNegative) continue;
+
+        if (time.isBefore(DateTime.now())) continue;  
+
+        // 🔹 Normal notification (already exists)
+        await NotificationService.schedule(
+          id: NotificationService.generateId(),
+          title: "Medicine Reminder 💊",
+          body: "Take ${model.name} (${model.dosage})",
+          time: time,
+          payload: model.id,
+        );
+
+        // 🔥 BACKUP (WorkManager)
+        Workmanager().registerOneOffTask(
+          "med_${time.millisecondsSinceEpoch}",
+          medicineTask,
+          initialDelay: delay,
+          inputData: {"body": "Take ${model.name}", "doseId": model.id},
+        );
+      }
+
       print("Saving to Hive: ${model.name}");
 
       print("QUEUE TYPE: ${queue.runtimeType}");
@@ -96,7 +126,6 @@ class MedicineRepositoryImpl implements MedicineRepository {
   }
 
   dynamic _cleanValue(dynamic value) {
-
     if (value != null && value.toString().contains('Timestamp')) {
       try {
         return value.toDate().toIso8601String();
@@ -118,5 +147,9 @@ class MedicineRepositoryImpl implements MedicineRepository {
     }
 
     return value;
+  }
+
+  int generateNotificationId() {
+    return DateTime.now().millisecondsSinceEpoch.remainder(2147483647);
   }
 }
