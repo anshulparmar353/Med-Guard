@@ -1,63 +1,83 @@
-import 'package:med_guard/features/dashboard/domain/repository/tracking_repo.dart';
-import 'package:med_guard/features/dashboard/domain/usecases/create_dose.dart';
 import 'package:med_guard/features/pillbox/domain/entities/medicine.dart';
 import 'package:med_guard/features/pillbox/domain/repository/medicine_repository.dart';
-import 'package:med_guard/features/reminder/domain/entities/reminder.dart';
 import 'package:med_guard/features/reminder/domain/usecases/cancel_reminder.dart';
 import 'package:med_guard/features/reminder/domain/usecases/schedule_reminder.dart';
+import 'package:med_guard/features/reminder/domain/entities/reminder.dart';
 
 class UpdateMedicineWithReschedule {
   final MedicineRepository medicineRepository;
-  final TrackingRepository trackingRepository;
-  final ScheduleReminder scheduleReminder;
   final CancelReminder cancelReminder;
-  final CreateDose createDose;
+  final ScheduleReminder scheduleReminder;
 
   UpdateMedicineWithReschedule({
     required this.medicineRepository,
-    required this.trackingRepository,
-    required this.scheduleReminder,
     required this.cancelReminder,
-    required this.createDose,
+    required this.scheduleReminder,
   });
 
   Future<void> call(Medicine medicine) async {
+    final now = DateTime.now();
 
-    final oldDoses = await trackingRepository.getByMedicineId(medicine.id);
+    final start = medicine.startDate ?? DateTime(now.year, now.month, now.day);
+    final end = medicine.endDate ?? start.add(const Duration(days: 7));
 
-    for (final dose in oldDoses) {
-      await cancelReminder(dose.notificationId); 
+    for (
+      DateTime day = start;
+      !day.isAfter(end);
+      day = day.add(const Duration(days: 1))
+    ) {
+      for (final time in medicine.times) {
+        final scheduled = DateTime(
+          day.year,
+          day.month,
+          day.day,
+          time.hour,
+          time.minute,
+        );
+
+        final id = "${medicine.id}_${scheduled.toIso8601String()}".hashCode;
+
+        await cancelReminder(id);
+      }
     }
 
-    await trackingRepository.deleteByMedicineId(medicine.id);
-
+    // 🔥 STEP 2: UPDATE MEDICINE
     await medicineRepository.addMedicine(medicine);
 
-    for (final time in medicine.times) {
+    // 🔥 STEP 3: RESCHEDULE
+    for (
+      DateTime day = start;
+      !day.isAfter(end);
+      day = day.add(const Duration(days: 1))
+    ) {
+      for (final time in medicine.times.toSet()) {
+        final scheduled = DateTime(
+          day.year,
+          day.month,
+          day.day,
+          time.hour,
+          time.minute,
+        );
 
-      final now = DateTime.now();
+        if (_isSameDay(day, now) && scheduled.isBefore(now)) continue;
 
-      final scheduledTime = DateTime(
-        now.year,
-        now.month,
-        now.day,
-        time.hour,
-        time.minute,
-      );
+        final doseId = "${medicine.id}-${scheduled.toIso8601String()}";
 
-      final dose = await createDose.call(
-        medicineId: medicine.id,
-        medicineName: medicine.name,
-        scheduledTime: scheduledTime,
-      );
+        final notificationId = doseId.hashCode;
 
-      await scheduleReminder(
-        Reminder(
-          id: dose.notificationId,
-          medicineName: medicine.name,
-          time: scheduledTime,
-        ),
-      );
+        await scheduleReminder(
+          Reminder(
+            id: notificationId,
+            payload: doseId,
+            medicineName: medicine.name,
+            time: scheduled,
+          ),
+        );
+      }
     }
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 }

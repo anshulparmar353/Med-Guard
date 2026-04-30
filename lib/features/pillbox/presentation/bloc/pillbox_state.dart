@@ -8,8 +8,9 @@ class PillboxLoading extends PillboxState {}
 
 class PillboxLoaded extends PillboxState {
   final List<Medicine> medicines;
+  final bool fromAdd;
 
-  PillboxLoaded(this.medicines);
+  PillboxLoaded(this.medicines, {this.fromAdd = false});
 }
 
 class PillboxError extends PillboxState {

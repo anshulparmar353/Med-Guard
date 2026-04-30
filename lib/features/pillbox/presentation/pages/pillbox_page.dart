@@ -19,9 +19,9 @@ class _PillboxPageState extends State<PillboxPage> {
   void initState() {
     super.initState();
 
-    print("🔥 LOADING MEDICINES");
-
-    context.read<PillboxBloc>().add(LoadMedicines());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<PillboxBloc>().add(LoadMedicines());
+    });
   }
 
   @override
@@ -87,7 +87,6 @@ class _PillboxPageState extends State<PillboxPage> {
             );
           }
 
-          // 🔥 IMPORTANT fallback
           return const Center(child: Text("Loading..."));
         },
       ),
@@ -111,7 +110,6 @@ class _PillboxPageState extends State<PillboxPage> {
       ),
       child: Row(
         children: [
-          // 🔹 Icon
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -123,7 +121,6 @@ class _PillboxPageState extends State<PillboxPage> {
 
           const SizedBox(width: 12),
 
-          // 🔹 Text
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -136,12 +133,14 @@ class _PillboxPageState extends State<PillboxPage> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(med.dosage, style: const TextStyle(color: Colors.grey)),
+                Text(
+                  "Dosages: ${med.dosage}",
+                  style: const TextStyle(color: Colors.grey),
+                ),
               ],
             ),
           ),
 
-          // 🔹 Actions
           PopupMenuButton<String>(
             onSelected: (value) {
               if (value == "edit") {
@@ -175,7 +174,14 @@ class _PillboxPageState extends State<PillboxPage> {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
               context.read<PillboxBloc>().add(
-                DeleteMedicineWithCleanupEvent(med.id),
+                DeleteMedicineWithCleanupEvent(
+                  medicineId: med.id,
+                  times: med.times,
+                  start: med.startDate ?? DateTime.now(),
+                  end:
+                      med.endDate ??
+                      DateTime.now().add(const Duration(days: 7)),
+                ),
               );
               context.pop();
             },

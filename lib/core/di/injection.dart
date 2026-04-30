@@ -10,6 +10,7 @@ import 'package:hive/hive.dart';
 import 'package:med_guard/core/notifier/auth_notifier.dart';
 import 'package:med_guard/core/routes/app_go_router.dart';
 import 'package:med_guard/core/services/connectivity_service.dart';
+import 'package:med_guard/core/services/daily_dose_generator.dart';
 import 'package:med_guard/core/services/missed_dose_service.dart';
 import 'package:med_guard/core/services/notification_action_handler.dart';
 import 'package:med_guard/core/services/sync_service.dart';
@@ -32,15 +33,11 @@ import 'package:med_guard/features/dashboard/data/datasources/tracking_remote_da
 import 'package:med_guard/features/dashboard/data/models/dose_log_model.dart';
 import 'package:med_guard/features/dashboard/data/repository_impl/tracking_repository_impl.dart';
 import 'package:med_guard/features/dashboard/domain/repository/tracking_repo.dart';
-import 'package:med_guard/features/dashboard/domain/usecases/create_dose.dart';
 import 'package:med_guard/features/dashboard/domain/usecases/get_dashboard_data.dart';
-import 'package:med_guard/features/dashboard/domain/usecases/get_range_doses.dart';
-import 'package:med_guard/features/dashboard/domain/usecases/get_today_doses.dart';
 import 'package:med_guard/features/dashboard/domain/usecases/get_weekly_adherence.dart';
 import 'package:med_guard/features/dashboard/domain/usecases/mark_dose_missed.dart';
 import 'package:med_guard/features/dashboard/domain/usecases/mark_dose_skipped.dart';
 import 'package:med_guard/features/dashboard/domain/usecases/mark_dose_taken.dart';
-import 'package:med_guard/features/dashboard/domain/usecases/refresh_daily_doses.dart';
 import 'package:med_guard/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 
 import 'package:med_guard/features/pillbox/data/datasources/medicine_local_datasource.dart';
@@ -189,6 +186,10 @@ Future<void> init() async {
     () => TrackingLocalDataSource(getIt<Box<DoseLogModel>>()),
   );
 
+  getIt.registerLazySingleton<DailyDoseGenerator>(
+    () => DailyDoseGenerator(medicineLocal: getIt(), doseLocal: getIt()),
+  );
+
   getIt.registerLazySingleton(
     () => SyncService(
       queue: getIt<SyncQueueLocalDataSource>(),
@@ -200,7 +201,7 @@ Future<void> init() async {
   );
 
   getIt.registerLazySingleton(
-    () => AppLifecycleSync(getIt(), getIt(), getIt()),
+    () => AppLifecycleSync(getIt(), getIt(), getIt(), getIt()),
   );
 
   getIt.registerLazySingleton(() => SyncMedicines(getIt()));
@@ -217,23 +218,21 @@ Future<void> init() async {
   getIt.registerLazySingleton<UpdateMedicineWithReschedule>(
     () => UpdateMedicineWithReschedule(
       medicineRepository: getIt(),
-      trackingRepository: getIt(),
-      scheduleReminder: getIt(),
       cancelReminder: getIt(),
-      createDose: getIt(),
+      scheduleReminder: getIt(),
     ),
   );
 
   getIt.registerLazySingleton<DeleteMedicineWithCleanup>(
     () => DeleteMedicineWithCleanup(
       medicineRepository: getIt(),
-      trackingRepository: getIt(),
       cancelReminder: getIt(),
+      trackingRepository: getIt(),
     ),
   );
 
   getIt.registerLazySingleton<AddMedicineWithSchedule>(
-    () => AddMedicineWithSchedule(getIt(), getIt(), getIt()),
+    () => AddMedicineWithSchedule(getIt(), getIt()),
   );
 
   getIt.registerLazySingleton<DeleteMedicine>(() => DeleteMedicine(getIt()));
@@ -250,12 +249,9 @@ Future<void> init() async {
     () => PillboxBloc(
       getMedicines: getIt(),
       addMedicineWithSchedule: getIt(),
-      addMedicine: getIt(),
-      deleteMedicine: getIt(),
       deleteMedicineWithCleanup: getIt(),
       updateMedicineWithReschedule: getIt(),
       syncMedicines: getIt(),
-      syncService: getIt(),
       syncManager: getIt(),
     ),
   );
@@ -285,36 +281,36 @@ Future<void> init() async {
     ),
   );
 
-  getIt.registerLazySingleton(() => CreateDose(getIt()));
   getIt.registerLazySingleton(() => GetDashboardData(getIt()));
   getIt.registerLazySingleton(() => MarkDoseTaken(getIt()));
   getIt.registerLazySingleton(() => MarkDoseSkipped(getIt()));
-  getIt.registerLazySingleton(() => GetTodayDoses(getIt()));
-  getIt.registerLazySingleton(() => GetRangeDoses(getIt()));
   getIt.registerLazySingleton(() => MarkDoseMissed(getIt()));
   getIt.registerLazySingleton(() => GetWeeklyAdherence(getIt()));
-  getIt.registerLazySingleton(() => RefreshDailyDoses(getIt(), getIt()));
 
   getIt.registerLazySingleton(
     () => MissedDoseService(
-      local: getIt<TrackingLocalDataSource>(),
-      markMissed: getIt<MarkDoseMissed>(),
+      getIt<TrackingLocalDataSource>(),
+      getIt<TrackingRemoteDataSource>(),
+      getIt<SyncQueueLocalDataSource>(),
     ),
   );
 
-  getIt.registerFactory(
+  getIt.registerLazySingleton(
     () => DashboardBloc(
-      getDashboardData: getIt(),
       getWeeklyAdherence: getIt(),
       markDoseTaken: getIt(),
       markDoseSkipped: getIt(),
-      refreshDailyDoses: getIt(),
-      authRepository: getIt(),
-      syncService: getIt(),
+      trackingRepository: getIt(),
+      local: getIt(),
     ),
   );
 
   // ================= NOTIFICATION =================
 
-  getIt.registerLazySingleton(() => NotificationActionHandler(getIt()));
+  getIt.registerLazySingleton(
+    () => NotificationActionHandler(
+      getIt<MarkDoseTaken>(),
+      getIt<MarkDoseSkipped>(),
+    ),
+  );
 }

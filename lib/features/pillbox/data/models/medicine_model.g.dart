@@ -23,13 +23,16 @@ class MedicineModelAdapter extends TypeAdapter<MedicineModel> {
       times: (fields[3] as List).cast<DateTime>(),
       updatedAt: fields[4] as DateTime,
       isDeleted: fields[5] as bool,
+      isDaily: fields[6] as bool,
+      startDate: fields[7] as DateTime?,
+      endDate: fields[8] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, MedicineModel obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -41,7 +44,13 @@ class MedicineModelAdapter extends TypeAdapter<MedicineModel> {
       ..writeByte(4)
       ..write(obj.updatedAt)
       ..writeByte(5)
-      ..write(obj.isDeleted);
+      ..write(obj.isDeleted)
+      ..writeByte(6)
+      ..write(obj.isDaily)
+      ..writeByte(7)
+      ..write(obj.startDate)
+      ..writeByte(8)
+      ..write(obj.endDate);
   }
 
   @override

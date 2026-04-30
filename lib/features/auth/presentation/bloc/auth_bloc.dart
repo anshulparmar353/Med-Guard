@@ -1,6 +1,7 @@
+import 'dart:async';
+
 import 'package:bloc/bloc.dart';
 import 'package:med_guard/core/services/connectivity_service.dart';
-import 'package:med_guard/core/services/notification_service.dart';
 import 'package:med_guard/core/services/sync_service.dart';
 import 'package:med_guard/features/auth/domain/repository/auth_repository.dart';
 import 'package:med_guard/features/auth/domain/usecases/login_usecase.dart';
@@ -19,6 +20,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final ConnectivityService connectivityService;
   final MedicineRepository medRepo;
 
+  StreamSubscription? _connectionSub;
+
   AuthBloc(
     this.loginUseCase,
     this.signupUseCase,
@@ -36,26 +39,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
         if (user != null) {
           await syncService.sync(user.id);
+          _bindAutoSync(user.id);
 
           emit(AuthAuthenticated(user));
         } else {
           emit(AuthUnauthenticated());
-        }
-
-        final medicines = await medRepo.getMedicines();
-
-        for (final med in medicines) {
-          for (final time in med.times) {
-            if (time.isAfter(DateTime.now())) {
-              await NotificationService.schedule(
-                id: NotificationService.generateId(),
-                title: "Medicine Reminder 💊",
-                body: "Take ${med.name}",
-                time: time,
-                payload: med.id,
-              );
-            }
-          }
         }
       } catch (e) {
         emit(AuthUnauthenticated());
@@ -115,11 +103,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     });
   }
   void _bindAutoSync(String userId) {
-    connectivityService.connectionStream.listen((isOnline) async {
+    _connectionSub = connectivityService.connectionStream.listen((isOnline) async {
       if (isOnline) {
         print("🌐 INTERNET RESTORED → AUTO SYNC");
         await syncService.sync(userId);
       }
     });
+  }
+
+  @override
+  Future<void> close() {
+    _connectionSub?.cancel();
+    return super.close();
   }
 }

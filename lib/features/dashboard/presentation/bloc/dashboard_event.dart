@@ -1,8 +1,9 @@
+import 'package:med_guard/features/dashboard/domain/entities/dose_log.dart';
+
 abstract class DashboardEvent {}
 
 class LoadDashboard extends DashboardEvent {}
 
-class AppResumed extends DashboardEvent {}
 class MarkDoseTakenEvent extends DashboardEvent {
   final String doseId;
 
@@ -15,6 +16,9 @@ class MarkDoseSkippedEvent extends DashboardEvent {
   MarkDoseSkippedEvent(this.doseId);
 }
 
-class RefreshDashboard extends DashboardEvent {}
+class DoseStreamUpdated extends DashboardEvent {
+  final List<DoseLog> doses;
 
-class GenerateAndLoadDashboardEvent extends DashboardEvent {}
+  DoseStreamUpdated(this.doses);
+}
+

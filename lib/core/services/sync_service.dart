@@ -32,16 +32,16 @@ class SyncService {
   Future<void> sync(String userId) async {
     if (_isSyncing) return;
 
-    print("SYNC STARTED");
-
     _isSyncing = true;
 
-    try {
-      await _pushWithRetry(userId);
-      await _pullWithRetry(userId);
-    } finally {
-      _isSyncing = false;
-    }
+    Future.microtask(() async {
+      try {
+        await _pushWithRetry(userId);
+        await _pullWithRetry(userId);
+      } finally {
+        _isSyncing = false;
+      }
+    });
   }
 
   Future<void> _pushWithRetry(String userId) async {
@@ -74,11 +74,10 @@ class SyncService {
         await queue.incrementRetry(item.id);
 
         if (item.retryCount > 3) {
-          logger.e('Dropping item after max retries: ${item.id}');
           await queue.remove(item.id);
         }
 
-        break;
+        continue;
       }
     }
   }
@@ -123,7 +122,7 @@ class SyncService {
       getUpdatedAt: (m) => m.updatedAt,
     );
 
-    await local.replaceAll(resolvedMedicines);
+    await _updateMedicinesIncrementally(resolvedMedicines);
 
     final remoteDoses = await retry(
       () => trackingRemote.fetchDoses(userId, lastSync),
@@ -142,7 +141,7 @@ class SyncService {
       getUpdatedAt: (d) => d.updatedAt,
     );
 
-    await trackingLocal.replaceAllDoses(resolvedDoses);
+    await _updateDosesIncrementally(resolvedDoses);
 
     await _saveLastSyncTime();
   }
@@ -155,5 +154,38 @@ class SyncService {
   Future<void> _saveLastSyncTime() async {
     final box = await Hive.openBox('sync_meta');
     await box.put('lastSync', DateTime.now());
+  }
+
+  Future<void> _updateDosesIncrementally(List<DoseLogModel> remoteDoses) async {
+    final localMap = {
+      for (final d in await trackingLocal.getAllDoses()) d.id: d,
+    };
+
+    for (final remote in remoteDoses) {
+      final local = localMap[remote.id];
+
+      // 🔥 only update if changed
+      if (local == null || remote.updatedAt.isAfter(local.updatedAt)) {
+        await trackingLocal.update(remote);
+      }
+    }
+
+    print("✅ INCREMENTAL DOSE SYNC DONE");
+  }
+
+  Future<void> _updateMedicinesIncrementally(
+    List<MedicineModel> remoteMeds,
+  ) async {
+    final localMap = {for (final m in local.getMedicines()) m.id: m};
+
+    for (final remote in remoteMeds) {
+      final localMed = localMap[remote.id];
+
+      if (localMed == null || remote.updatedAt.isAfter(localMed.updatedAt)) {
+        await local.addMedicine(remote);
+      }
+    }
+
+    print("✅ INCREMENTAL MED SYNC DONE");
   }
 }

@@ -1,4 +1,5 @@
 import 'package:med_guard/features/dashboard/domain/entities/dashboard_data.dart';
+import 'package:med_guard/features/dashboard/domain/entities/dose_status.dart';
 import 'package:med_guard/features/dashboard/domain/repository/tracking_repo.dart';
 
 class GetDashboardData {
@@ -7,31 +8,31 @@ class GetDashboardData {
   GetDashboardData(this.repo);
 
   Future<DashboardData> call() async {
-    
     final today = await repo.getTodayDoses();
-
-    int taken = 0;
-    int missed = 0;
-    int skipped = 0; 
 
     final now = DateTime.now();
 
+    int taken = 0;
+    int missed = 0;
+    int skipped = 0;
+
     for (final d in today) {
-      if (d.status.name == "taken") {
+      if (d.status == DoseStatus.taken) {
         taken++;
-      } else if (d.status.name == "skipped") {
-        skipped++; // 
+      } else if (d.status == DoseStatus.skipped) {
+        skipped++;
       } else if (d.scheduledTime.isBefore(now)) {
         missed++;
       }
     }
 
-    final adherence = (taken + missed) == 0 ? 0.0 : taken / (taken + missed);
+    final total = taken + missed;
+    final adherence = total == 0 ? 0.0 : taken / total;
 
     return DashboardData(
       taken: taken,
       missed: missed,
-      skipped: skipped, 
+      skipped: skipped,
       adherence: adherence,
       todayDoses: today,
     );

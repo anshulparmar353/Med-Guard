@@ -6,7 +6,10 @@ import 'package:med_guard/core/services/sync_service.dart';
 class ConnectivityService {
   final Connectivity _connectivity;
 
+  bool _lastState = false;
+
   final _controller = StreamController<bool>.broadcast();
+  
   Stream<bool> get connectionStream => _controller.stream;
 
   StreamSubscription<List<ConnectivityResult>>? _subscription;
@@ -29,10 +32,19 @@ class ConnectivityService {
   }
 
   void startSync(SyncService syncService, String userId) {
-    connectionStream.listen((isOnline) async {
+    connectionStream.listen((isOnline) {
+      // 🔥 ignore duplicate states
+      if (isOnline == _lastState) return;
+
+      _lastState = isOnline;
+
       if (isOnline) {
-        print("🌐 INTERNET RESTORED → SYNC TRIGGERED");
-        await syncService.sync(userId);
+        print("🌐 INTERNET RESTORED → SYNC");
+
+        // 🔥 delay to avoid burst triggers
+        Future.delayed(const Duration(seconds: 2), () {
+          syncService.sync(userId);
+        });
       }
     });
   }

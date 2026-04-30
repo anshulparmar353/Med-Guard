@@ -5,6 +5,10 @@ class WeeklyAdherence {
 
   WeeklyAdherence({required this.days});
 
+  factory WeeklyAdherence.empty() {
+    return WeeklyAdherence(days: List.generate(7, (_) => DailyAdherence(0, 0)));
+  }
+
   int get taken => days.fold(0, (s, d) => s + d.taken);
   int get missed => days.fold(0, (s, d) => s + d.missed);
 

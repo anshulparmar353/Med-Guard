@@ -7,15 +7,20 @@ class MedicineLocalDataSource {
   MedicineLocalDataSource(this.box);
 
   Future<void> addMedicine(MedicineModel med) async {
-    final box = await Hive.openBox<MedicineModel>('medicines');
-
-    print("Saving to Hive: ${med.name}");
-
+    print("📝 WRITING MEDICINE: ${med.id}");
     await box.put(med.id, med);
   }
 
   List<MedicineModel> getMedicines() {
-    return box.values.where((m) => !m.isDeleted).toList();
+    final meds = box.values.toList();
+
+    print("📦 HIVE MEDICINES COUNT: ${meds.length}");
+
+    for (final m in meds) {
+      print("💊 ${m.name} | isDaily=${m.isDaily} | times=${m.times}");
+    }
+
+    return meds;
   }
 
   Future<void> deleteMedicine(String id) async {

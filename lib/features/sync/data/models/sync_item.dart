@@ -4,13 +4,14 @@ import 'package:med_guard/features/sync/domain/entities/sync_type.dart';
 part 'sync_item.g.dart';
 
 @HiveType(typeId: 4)
-class SyncItem extends HiveObject {
+class SyncItem {
   @HiveField(0)
   final String id;
 
   @HiveField(1)
   final SyncType type;
 
+  // 🔥 FIXED TYPE
   @HiveField(2)
   final Map<String, dynamic> data;
 

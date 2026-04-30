@@ -75,8 +75,14 @@ class _UpdateMedicinePageState extends State<UpdateMedicinePage> {
       name: name,
       dosage: dosage,
       times: _times,
-      updateAt: DateTime.now(),
+
+      updatedAt: DateTime.now(), 
+
       isDeleted: false,
+      isDaily: true,
+
+      startDate: widget.medicine.startDate,
+      endDate: widget.medicine.endDate,
     );
 
     context.read<PillboxBloc>().add(

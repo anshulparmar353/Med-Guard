@@ -24,7 +24,7 @@ class DoseLogModelAdapter extends TypeAdapter<DoseLogModel> {
       takenAt: fields[4] as DateTime?,
       status: fields[5] as String,
       updatedAt: fields[6] as DateTime,
-      notificationId: fields[8] as int,
+      notificationId: fields[8] as int?,
       isDeleted: fields[7] as bool,
     );
   }

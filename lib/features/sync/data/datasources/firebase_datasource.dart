@@ -14,7 +14,7 @@ class FirebaseDatasource {
         'name': m.name,
         'dosage': m.dosage,
         'times': m.times.map((t) => t.toIso8601String()).toList(),
-        'updatedAt': m.updateAt.toIso8601String(), // ✅ FIXED
+        'updatedAt': m.updatedAt.toIso8601String(), // ✅ FIXED
       };
     }).toList();
 
@@ -39,8 +39,9 @@ class FirebaseDatasource {
         name: m['name'],
         dosage: m['dosage'],
         times: (m['times'] as List).map((t) => DateTime.parse(t)).toList(),
-        updatedAt: DateTime.parse(m['updatedAt']), // ✅ FIXED
+        updatedAt: DateTime.parse(m['updatedAt']), 
         isDeleted: m['isDeleted'],
+        isDaily: m['isDaily'],
       );
     }).toList();
   }

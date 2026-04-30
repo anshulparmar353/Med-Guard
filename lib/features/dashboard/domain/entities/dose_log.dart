@@ -4,20 +4,22 @@ class DoseLog {
   final String id;
   final String medicineId;
   final String medicineName;
-  final int notificationId;
   final DateTime scheduledTime;
+
+  final DoseStatus status; 
+
   final DateTime? takenAt;
-  final DoseStatus status;
   final DateTime updatedAt;
+  final int? notificationId;
 
   DoseLog({
     required this.id,
     required this.medicineId,
     required this.medicineName,
-    required this.notificationId,
     required this.scheduledTime,
     required this.status,
     required this.updatedAt,
     this.takenAt,
+    this.notificationId,
   });
 }

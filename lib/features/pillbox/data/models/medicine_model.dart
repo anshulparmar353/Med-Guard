@@ -24,6 +24,15 @@ class MedicineModel extends HiveObject {
   @HiveField(5)
   bool isDeleted;
 
+  @HiveField(6)
+  bool isDaily;
+
+  @HiveField(7)
+  DateTime? startDate; // ✅ NEW
+
+  @HiveField(8)
+  DateTime? endDate; // ✅ NEW
+
   MedicineModel({
     required this.id,
     required this.name,
@@ -31,7 +40,12 @@ class MedicineModel extends HiveObject {
     required this.times,
     required this.updatedAt,
     required this.isDeleted,
+    required this.isDaily,
+    this.startDate,
+    this.endDate,
   });
+
+  // ================= ENTITY =================
 
   Medicine toEntity() {
     return Medicine(
@@ -39,8 +53,11 @@ class MedicineModel extends HiveObject {
       name: name,
       dosage: dosage,
       times: times,
-      updateAt: updatedAt,
+      updatedAt: updatedAt, // ✅ FIXED
       isDeleted: isDeleted,
+      isDaily: isDaily,
+      startDate: startDate, // ✅ NEW
+      endDate: endDate, // ✅ NEW
     );
   }
 
@@ -50,23 +67,44 @@ class MedicineModel extends HiveObject {
       name: med.name,
       dosage: med.dosage,
       times: med.times,
-      updatedAt: med.updateAt,
+      updatedAt: med.updatedAt, // ✅ FIXED
       isDeleted: med.isDeleted,
+      isDaily: med.isDaily,
+      startDate: med.startDate, // ✅ NEW
+      endDate: med.endDate, // ✅ NEW
     );
   }
 
+  // ================= JSON =================
+
   factory MedicineModel.fromJson(Map<String, dynamic> json) {
     return MedicineModel(
-      id: json['id'],
-      name: json['name'],
-      dosage: json['dosage'],
-      times: (json['times'] as List).map((e) {
-        if (e is Timestamp) return e.toDate();
-        if (e is String) return DateTime.parse(e);
-        return e as DateTime;
-      }).toList(),
-      updatedAt: (json['updatedAt'] as Timestamp).toDate(),
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      dosage: json['dosage'] ?? '',
+
+      times:
+          (json['times'] as List?)?.map((e) => DateTime.parse(e)).toList() ??
+          [],
+
+      updatedAt: json['updatedAt'] is Timestamp
+          ? (json['updatedAt'] as Timestamp).toDate()
+          : DateTime.parse(json['updatedAt']),
+
       isDeleted: json['isDeleted'] ?? false,
+      isDaily: json['isDaily'] ?? true,
+
+      startDate: json['startDate'] == null
+          ? null
+          : (json['startDate'] is Timestamp
+                ? (json['startDate'] as Timestamp).toDate()
+                : DateTime.parse(json['startDate'])),
+
+      endDate: json['endDate'] == null
+          ? null
+          : (json['endDate'] is Timestamp
+                ? (json['endDate'] as Timestamp).toDate()
+                : DateTime.parse(json['endDate'])),
     );
   }
 
@@ -78,6 +116,9 @@ class MedicineModel extends HiveObject {
       "times": times.map((e) => e.toIso8601String()).toList(),
       "updatedAt": updatedAt.toIso8601String(),
       "isDeleted": isDeleted,
+      "isDaily": isDaily,
+      "startDate": startDate?.toIso8601String(), // ✅ NEW
+      "endDate": endDate?.toIso8601String(), // ✅ NEW
     };
   }
 }

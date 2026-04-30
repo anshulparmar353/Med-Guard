@@ -1,33 +1,48 @@
 import 'package:hive/hive.dart';
 import 'package:med_guard/features/dashboard/data/models/dose_log_model.dart';
+import 'package:med_guard/features/dashboard/domain/entities/dose_status.dart';
 
 class TrackingLocalDataSource {
   final Box<DoseLogModel> box;
 
   TrackingLocalDataSource(this.box);
 
-  Future<DoseLogModel> createDose({
-    required String medicineId,
-    required String medicineName,
-    required DateTime scheduledTime,
-  }) async {
-    final id = "$medicineId-${scheduledTime.toIso8601String()}";
+  Stream<List<DoseLogModel>> watchTodayDoses() async* {
+    yield _getTodayInitial();
 
-    final existing = box.get(id);
-    if (existing != null) return existing;
+    await for (final _ in box.watch()) {
+      print("📡 HIVE EVENT");
 
-    final dose = DoseLogModel(
-      id: id,
-      medicineId: medicineId,
-      medicineName: medicineName,
-      scheduledTime: scheduledTime,
-      status: "pending",
-      updatedAt: DateTime.now(),
-      notificationId: id.hashCode & 0x7fffffff,
-    );
+      final now = DateTime.now();
 
-    await box.put(id, dose);
-    return dose;
+      final start = DateTime(now.year, now.month, now.day);
+      final end = start.add(const Duration(days: 1));
+
+      final result = box.values.where((d) {
+        return d.scheduledTime.isAfter(
+              start.subtract(const Duration(milliseconds: 1)),
+            ) &&
+            d.scheduledTime.isBefore(end);
+      }).toList();
+
+      print("📊 STREAM SIZE: ${result.length}");
+
+      yield result;
+    }
+  }
+
+  List<DoseLogModel> _getTodayInitial() {
+    final now = DateTime.now();
+
+    final start = DateTime(now.year, now.month, now.day);
+    final end = start.add(const Duration(days: 1));
+
+    return box.values.where((d) {
+      return d.scheduledTime.isAfter(
+            start.subtract(const Duration(milliseconds: 1)),
+          ) &&
+          d.scheduledTime.isBefore(end);
+    }).toList();
   }
 
   Future<List<DoseLogModel>> getAllDoses() async {
@@ -41,15 +56,24 @@ class TrackingLocalDataSource {
   }
 
   Future<void> markTaken(String id) async {
+    print("🧠 markTaken CALLED → $id");
+
     final dose = box.get(id);
+
+    print("🔍 DOSE FOUND: ${dose != null}");
+
     if (dose != null) {
       final updated = dose.copyWith(
-        status: "taken",
+        status: DoseStatus.taken.name,
         takenAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
       await box.put(updated.id, updated);
+
+      print("✅ UPDATED IN HIVE: ${updated.id} → ${updated.status}");
+    } else {
+      print("❌ DOSE NOT FOUND IN HIVE");
     }
   }
 
@@ -57,7 +81,7 @@ class TrackingLocalDataSource {
     final dose = box.get(id);
     if (dose != null) {
       final updated = dose.copyWith(
-        status: "skipped",
+        status: DoseStatus.skipped.name,
         updatedAt: DateTime.now(),
       );
 
@@ -82,14 +106,28 @@ class TrackingLocalDataSource {
     return box.get(id);
   }
 
-  Future<void> update(DoseLogModel model) async {
-    await box.put(model.id, model);
+  Future<void> update(DoseLogModel dose) async {
+    print("🟡 HIVE UPDATE: ${dose.id} → ${dose.status}");
+    await box.put(dose.id, dose);
   }
 
   Future<void> replaceAllDoses(List<DoseLogModel> doses) async {
     await box.clear();
-    for (final d in doses) {
-      await box.put(d.id, d);
+
+    final map = {for (final d in doses) d.id: d};
+
+    await box.putAll(map);
+  }
+
+  Future<void> addDoseIfNotExists(DoseLogModel dose) async {
+    final exists = box.containsKey(dose.id);
+
+    await box.put(dose.id, dose);
+
+    if (!exists) {
+      print("✅ NEW DOSE ADDED: ${dose.id}");
+    } else {
+      print("♻️ DOSE UPDATED: ${dose.id}");
     }
   }
 }

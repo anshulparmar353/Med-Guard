@@ -26,75 +26,79 @@ class _ProfilePageState extends State<ProfilePage> {
         elevation: 0,
       ),
 
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            const SizedBox(height: 10),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              const SizedBox(height: 10),
 
-            CircleAvatar(
-              radius: 45,
-              backgroundColor: Colors.blue,
-              child: const Icon(Icons.person, size: 40, color: Colors.white),
-            ),
-
-            const SizedBox(height: 16),
-
-            const Text(
-              "Dr. Sarah Johnson",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-
-            const SizedBox(height: 6),
-
-            const Text(
-              "sarah.johnson@medguard.com",
-              style: TextStyle(color: Colors.grey),
-            ),
-
-            const SizedBox(height: 30),
-
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+              CircleAvatar(
+                radius: 45,
+                backgroundColor: Colors.blue,
+                child: const Icon(Icons.person, size: 40, color: Colors.white),
               ),
-              child: Column(
-                children: [
-                  _tile(
-                    icon: Icons.person_outline,
-                    color: Colors.blue,
-                    title: "Edit Profile",
-                    onTap: () {
-                      context.push(AppRoutes.editProfileScreen);
-                    },
-                  ),
 
-                  const Divider(height: 1),
+              const SizedBox(height: 16),
 
-                  _tile(
-                    icon: Icons.notifications_none,
-                    color: Colors.green,
-                    title: "Notifications",
-                    onTap: () {},
-                  ),
-
-                  const Divider(height: 1),
-
-                  _tile(
-                    icon: Icons.logout,
-                    color: Colors.red,
-                    title: "Logout",
-                    textColor: Colors.red,
-                    onTap: () {
-                      context.read<AuthBloc>().add(LogoutRequested());
-                      context.go(AppRoutes.loginScreen);
-                    },
-                  ),
-                ],
+              const Text(
+                "Dr. Sarah Johnson",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
-            ),
-          ],
+
+              const SizedBox(height: 6),
+
+              const Text(
+                "sarah.johnson@medguard.com",
+                style: TextStyle(color: Colors.grey),
+              ),
+
+              const SizedBox(height: 30),
+
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  children: [
+                    _tile(
+                      icon: Icons.person_outline,
+                      color: Colors.blue,
+                      title: "Edit Profile",
+                      onTap: () {
+                        context.push(AppRoutes.editProfileScreen);
+                      },
+                    ),
+
+                    const Divider(height: 1),
+
+                    _tile(
+                      icon: Icons.notifications_none,
+                      color: Colors.green,
+                      title: "Notifications",
+                      onTap: () {},
+                    ),
+
+                    const Divider(height: 1),
+
+                    _tile(
+                      icon: Icons.logout,
+                      color: Colors.red,
+                      title: "Logout",
+                      textColor: Colors.red,
+                      onTap: () {
+                        context.read<AuthBloc>().add(LogoutRequested());
+                        context.go(AppRoutes.loginScreen);
+                      },
+                    ),
+
+                    const Divider(height: 5),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

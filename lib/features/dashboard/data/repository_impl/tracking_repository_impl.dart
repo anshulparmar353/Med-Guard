@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:med_guard/features/dashboard/domain/entities/dose_status.dart';
 import 'package:med_guard/features/dashboard/domain/repository/tracking_repo.dart';
 import 'package:med_guard/features/sync/data/datasources/sync_queue_local_DB.dart';
@@ -14,83 +16,111 @@ class TrackingRepositoryImpl implements TrackingRepository {
   TrackingRepositoryImpl(this.local, this.synclocal);
 
   @override
-  Future<DoseLog> createDose({
-    required String medicineId,
-    required String medicineName,
-    required DateTime scheduledTime,
-  }) async {
-    final model = await local.createDose(
-      medicineId: medicineId,
-      medicineName: medicineName,
-      scheduledTime: scheduledTime,
+  Stream<List<DoseLog>> watchTodayDoses() {
+    return local.watchTodayDoses().map(
+      (models) => models.map((e) => e.toEntity()).toList(),
     );
-    return model.toEntity();
+  }
+
+  @override
+  Future<List<DoseLog>> getDosesInRange(DateTime start, DateTime end) async {
+    final all = await local.getAllDoses();
+
+    final filtered = all.where(
+      (d) => !d.scheduledTime.isBefore(start) && !d.scheduledTime.isAfter(end),
+    );
+
+    return filtered.map((e) => e.toEntity()).toList();
   }
 
   @override
   Future<List<DoseLog>> getTodayDoses() async {
+    final all = await local.getAllDoses();
+
     final now = DateTime.now();
 
-    final doses = await local.getAllDoses(); 
-
-    final list = doses.where((d) {
-      return d.scheduledTime.year == now.year &&
-          d.scheduledTime.month == now.month &&
-          d.scheduledTime.day == now.day;
-    }).toList();
-
-    return list.map((e) => e.toEntity()).toList();
+    return all
+        .where(
+          (d) =>
+              d.scheduledTime.year == now.year &&
+              d.scheduledTime.month == now.month &&
+              d.scheduledTime.day == now.day,
+        )
+        .map((e) => e.toEntity())
+        .toList();
   }
 
   @override
-  Future<List<DoseLog>> getInRange(DateTime start, DateTime end) async {
-    final list = await local.getInRange(start, end);
-    return list.map((e) => e.toEntity()).toList();
-  }
-
-  @override
-  Future<void> markTaken(String id) async {
-    final dose = await local.getById(id);
+  Future<void> markTaken(String doseId) async {
+    final dose = await local.getById(doseId);
     if (dose == null) return;
 
-    // ❗ Idempotency
-    if (dose.status == "taken") return;
-
     final updated = dose.copyWith(
-      status: "taken",
+      status: DoseStatus.taken.name,
       takenAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
 
     await local.update(updated);
 
-    await synclocal.add(
-      SyncItem(
-        id: updated.id, 
-        type: SyncType.updateDose,
-        data: updated.toJson(),
-        createdAt: DateTime.now(),
+    unawaited(
+      synclocal.add(
+        SyncItem(
+          id: updated.id,
+          type: SyncType.updateDose,
+          data: updated.toLocalJson(),
+          createdAt: DateTime.now(),
+        ),
       ),
     );
   }
 
   @override
-  Future<void> markSkipped(String id) async {
-    final dose = await local.getById(id);
+  Future<void> markSkipped(String doseId) async {
+    final dose = await local.getById(doseId);
     if (dose == null) return;
 
-    if (dose.status == "skipped") return;
-
-    final updated = dose.copyWith(status: "skipped", updatedAt: DateTime.now());
+    final updated = dose.copyWith(
+      status: DoseStatus.skipped.name,
+      updatedAt: DateTime.now(),
+    );
 
     await local.update(updated);
 
-    await synclocal.add(
-      SyncItem(
-        id: updated.id,
-        type: SyncType.updateDose,
-        data: updated.toJson(),
-        createdAt: DateTime.now(),
+    unawaited(
+      synclocal.add(
+        SyncItem(
+          id: updated.id,
+          type: SyncType.updateDose,
+          data: updated.toLocalJson(),
+          createdAt: DateTime.now(),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Future<void> markMissed(String id) async {
+    final dose = await local.getById(id);
+    if (dose == null) return;
+
+    if (dose.status != DoseStatus.pending.name) return;
+
+    final updated = dose.copyWith(
+      status: DoseStatus.missed.name,
+      updatedAt: DateTime.now(),
+    );
+
+    await local.update(updated);
+
+    unawaited(
+      synclocal.add(
+        SyncItem(
+          id: updated.id,
+          type: SyncType.updateDose,
+          data: updated.toLocalJson(),
+          createdAt: DateTime.now(),
+        ),
       ),
     );
   }
@@ -104,32 +134,5 @@ class TrackingRepositoryImpl implements TrackingRepository {
   @override
   Future<void> deleteByMedicineId(String medicineId) async {
     await local.deleteByMedicineId(medicineId);
-  }
-
-  @override
-  Future<void> markMissed(String id) async {
-    final dose = await local.getById(id);
-    if (dose == null) return;
-
-    if (dose.status != DoseStatus.pending.name) return;
-
-    final now = DateTime.now();
-
-    final updated = dose.copyWith(
-      status: DoseStatus.missed.name,
-      updatedAt: now,
-    );
-
-    await local.update(updated);
-
-    await synclocal.add(
-      SyncItem(
-        id: updated.id,
-        type: SyncType.updateDose,
-        data: updated.toJson(),
-        createdAt: now,
-      ),
-    );
-
   }
 }

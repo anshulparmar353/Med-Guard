@@ -1,30 +1,40 @@
-import 'package:med_guard/features/dashboard/domain/entities/dose_status.dart';
-import 'package:med_guard/features/dashboard/domain/usecases/mark_dose_missed.dart';
+import 'package:med_guard/features/dashboard/data/datasources/tracking_remote_datasource.dart';
 import 'package:med_guard/features/dashboard/data/datasources/tracking_local_datasource.dart';
+import 'package:med_guard/features/sync/data/datasources/sync_queue_local_DB.dart';
+import 'package:med_guard/features/sync/data/models/sync_item.dart';
+import 'package:med_guard/features/sync/domain/entities/sync_type.dart';
 
 class MissedDoseService {
   final TrackingLocalDataSource local;
-  final MarkDoseMissed markMissed;
+  final TrackingRemoteDataSource remote; 
+  final SyncQueueLocalDataSource queue;
 
-  MissedDoseService({
-    required this.local,
-    required this.markMissed,
-  });
-
-  static const Duration gracePeriod = Duration(minutes: 30);
+  MissedDoseService(this.local, this.remote, this.queue);
 
   Future<void> checkAndMarkMissed() async {
     final now = DateTime.now();
 
     final doses = await local.getAllDoses();
 
-    for (final dose in doses) {
-      if (dose.status != DoseStatus.pending.name) continue;
+    for (final d in doses) {
+      final isPast = d.scheduledTime.isBefore(now);
+      final isPending = d.status == "pending";
 
-      final deadline = dose.scheduledTime.add(gracePeriod);
+      if (isPast && isPending) {
+        final updated = d.copyWith(status: "missed", updatedAt: DateTime.now());
 
-      if (now.isAfter(deadline)) {
-        await markMissed(dose.id);
+        await local.update(updated);
+
+        await queue.add(
+          SyncItem(
+            id: updated.id,
+            type: SyncType.updateDose,
+            data: updated.toLocalJson(),
+            createdAt: DateTime.now(),
+          ),
+        );
+
+        print("❌ MISSED DOSE MARKED: ${d.id}");
       }
     }
   }

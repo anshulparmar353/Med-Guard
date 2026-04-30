@@ -12,7 +12,6 @@ import 'package:med_guard/features/dashboard/presentation/widgets/action_card.da
 import 'package:med_guard/features/dashboard/presentation/widgets/dashboard_header.dart';
 import 'package:med_guard/features/dashboard/presentation/widgets/medicine_card.dart';
 import 'package:med_guard/features/dashboard/presentation/widgets/status_card.dart';
-import 'package:med_guard/features/dashboard/presentation/widgets/weekly_adherence_card.dart';
 import 'package:med_guard/shared/widget/error_widget.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -23,11 +22,6 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  @override
-  void initState() {
-    super.initState();
-    context.read<DashboardBloc>().add(LoadDashboard());
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,24 +30,24 @@ class _DashboardPageState extends State<DashboardPage> {
         print("UI STATE: $state");
 
         if (state is DashboardLoading) {
-          return Center(child: CircularProgressIndicator());
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
         if (state is DashboardError) {
-          return ErrorState(
-            message: state.message,
-            onRetry: () {
-              context.read<DashboardBloc>().add(LoadDashboard());
-            },
+          return Scaffold(
+            body: ErrorState(
+              message: state.message,
+              onRetry: () {
+                context.read<DashboardBloc>().add(LoadDashboard());
+              },
+            ),
           );
         }
 
         if (state is DashboardLoaded) {
           final doses = state.todayDoses;
-
-          final uniqueDoses = {
-            for (var d in doses) "${d.medicineId}_${d.scheduledTime}": d,
-          }.values.toList().cast<DoseLog>();
 
           List<DoseLog> filterByRange(List<DoseLog> list, int start, int end) {
             return list
@@ -66,11 +60,11 @@ class _DashboardPageState extends State<DashboardPage> {
               ..sort((a, b) => a.scheduledTime.compareTo(b.scheduledTime));
           }
 
-          final morning = filterByRange(uniqueDoses, 5, 12);
-          final afternoon = filterByRange(uniqueDoses, 12, 17);
-          final evening = filterByRange(uniqueDoses, 17, 21);
+          final morning = filterByRange(doses, 5, 12);
+          final afternoon = filterByRange(doses, 12, 17);
+          final evening = filterByRange(doses, 17, 21);
           final night =
-              uniqueDoses
+              doses
                   .where(
                     (d) =>
                         d.scheduledTime.hour >= 21 || d.scheduledTime.hour < 5,
@@ -78,30 +72,27 @@ class _DashboardPageState extends State<DashboardPage> {
                   .toList()
                 ..sort((a, b) => a.scheduledTime.compareTo(b.scheduledTime));
 
-          final taken = uniqueDoses
-              .where((d) => d.status == DoseStatus.taken)
-              .length;
-          final pending = uniqueDoses
+          final taken = doses.where((d) => d.status == DoseStatus.taken).length;
+
+          final pending = doses
               .where((d) => d.status == DoseStatus.pending)
               .length;
-          final missed = uniqueDoses
+
+          final missed = doses
               .where((d) => d.status == DoseStatus.missed)
               .length;
 
-          print("dashboard page");
-
           return Scaffold(
             backgroundColor: Colors.white,
-
             body: SafeArea(
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  DashboardHeader(),
+                  const DashboardHeader(),
 
                   const SizedBox(height: 20),
 
-                  Text(
+                  const Text(
                     "Quick Access",
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w400),
                   ),
@@ -125,7 +116,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         child: ActionCard(
                           color: Colors.white,
                           icon: Icons.access_time,
-                          label: "Set Remainder",
+                          label: "Set Reminder",
                           onTap: () {
                             context.push(AppRoutes.addMedicine);
                           },
@@ -186,7 +177,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       ),
                       TextButton(
                         onPressed: () {
-                          context.push(AppRoutes.pillbox);
+                          context.go(AppRoutes.pillbox);
                         },
                         child: const Text("View All"),
                       ),
@@ -225,10 +216,6 @@ class _DashboardPageState extends State<DashboardPage> {
 
                   const SizedBox(height: 20),
 
-                  WeeklyAdherenceCard(data: state.weekly),
-
-                  const SizedBox(height: 20),
-
                   _buildSection(context, "MORNING", morning),
                   _buildSection(context, "AFTERNOON", afternoon),
                   _buildSection(context, "EVENING", evening),
@@ -241,7 +228,7 @@ class _DashboardPageState extends State<DashboardPage> {
           );
         }
 
-        return Center(child: Text("DASHBOARD PAGE"));
+        return const Scaffold(body: Center(child: Text("Dashboard")));
       },
     );
   }

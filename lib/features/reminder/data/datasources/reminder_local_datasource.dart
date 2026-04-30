@@ -2,7 +2,6 @@ import 'package:med_guard/core/services/notification_service.dart';
 import 'package:med_guard/features/reminder/domain/entities/reminder.dart';
 
 class ReminderLocalDataSource {
-
   const ReminderLocalDataSource();
 
   Future<void> schedule(Reminder reminder) {
@@ -11,7 +10,7 @@ class ReminderLocalDataSource {
       title: "Time to take medicine",
       body: reminder.medicineName,
       time: reminder.time,
-      payload: reminder.id.toString(),
+      payload: reminder.payload,
     );
   }
 

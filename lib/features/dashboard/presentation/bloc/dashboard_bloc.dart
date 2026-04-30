@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:med_guard/core/services/sync_service.dart';
-import 'package:med_guard/features/auth/domain/repository/auth_repository.dart';
-import 'package:med_guard/features/dashboard/domain/usecases/refresh_daily_doses.dart';
-import '../../domain/usecases/get_dashboard_data.dart';
+import 'package:hive/hive.dart';
+import 'package:med_guard/features/dashboard/data/datasources/tracking_local_datasource.dart';
+import 'package:med_guard/features/dashboard/data/models/dose_log_model.dart';
+import 'package:med_guard/features/dashboard/domain/entities/dose_status.dart';
+import 'package:med_guard/features/dashboard/domain/entities/weekly_adherence.dart';
+import 'package:med_guard/features/dashboard/domain/repository/tracking_repo.dart';
 import '../../domain/usecases/get_weekly_adherence.dart';
 import '../../domain/usecases/mark_dose_taken.dart';
 import '../../domain/usecases/mark_dose_skipped.dart';
@@ -10,167 +14,130 @@ import 'dashboard_event.dart';
 import 'dashboard_state.dart';
 
 class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
-  final GetDashboardData getDashboardData;
   final GetWeeklyAdherence getWeeklyAdherence;
   final MarkDoseTaken markDoseTaken;
   final MarkDoseSkipped markDoseSkipped;
-  final RefreshDailyDoses refreshDailyDoses;
-  final AuthRepository authRepository;
-  final SyncService syncService;
+  final TrackingRepository trackingRepository;
+  final TrackingLocalDataSource local;
+
+  StreamSubscription? _hiveSub;
+  StreamSubscription? _repoSub;
+  WeeklyAdherence? _cachedWeekly;
 
   DashboardBloc({
-    required this.getDashboardData,
     required this.getWeeklyAdherence,
     required this.markDoseTaken,
     required this.markDoseSkipped,
-    required this.refreshDailyDoses,
-    required this.authRepository,
-    required this.syncService,
+    required this.trackingRepository,
+    required this.local,
   }) : super(DashboardInitial()) {
     on<LoadDashboard>(_onLoadDashboard);
     on<MarkDoseTakenEvent>(_onMarkTaken);
     on<MarkDoseSkippedEvent>(_onMarkSkipped);
-    on<AppResumed>(_onAppResume);
-    on<RefreshDashboard>(_onRefreshDashboard);
-    on<GenerateAndLoadDashboardEvent>(_onGenerateAndLoadDashboard);
+    on<DoseStreamUpdated>(_onDoseStreamUpdated);
+
+    _listenToHive();
+  }
+
+  void _listenToHive() {
+    final box = Hive.box<DoseLogModel>('dosesBox');
+
+    _hiveSub = box.watch().listen((event) {
+      print("📡 HIVE EVENT → ${event.key}");
+
+      final doses = box.values.map((e) => e.toEntity()).toList();
+
+      add(DoseStreamUpdated(doses));
+    });
   }
 
   Future<void> _onLoadDashboard(
     LoadDashboard event,
     Emitter<DashboardState> emit,
   ) async {
-    print("🔥 DASHBOARD RELOADING");
+    if (_repoSub != null) return;
 
     emit(DashboardLoading());
 
-    final data = await getDashboardData();
-    final weekly = await getWeeklyAdherence();
+    final box = Hive.box<DoseLogModel>('dosesBox');
 
-    print("🔥 DATA COUNT: ${data.todayDoses.length}");
+    final initial = box.values.map((e) => e.toEntity()).toList();
 
-    emit(
-      DashboardLoaded(
-        adherence: data.adherence,
-        taken: data.taken,
-        missed: data.missed,
-        skipped: data.skipped,
-        todayDoses: data.todayDoses,
-        weekly: weekly,
-      ),
-    );
+    add(DoseStreamUpdated(initial));
+
+    // Optional: keep repo stream ONLY if syncing from server
+    _repoSub = trackingRepository.watchTodayDoses().listen((doses) {
+      add(DoseStreamUpdated(doses));
+    });
   }
 
   Future<void> _onMarkTaken(
     MarkDoseTakenEvent event,
     Emitter<DashboardState> emit,
   ) async {
-    if (state is! DashboardLoaded) return;
-
-    try {
-      await markDoseTaken(event.doseId);
-
-      final user = await authRepository.getCurrentUser();
-
-      if (user != null) {
-        await syncService.sync(user.id);
-      }
-
-      final data = await getDashboardData();
-      final weekly = await getWeeklyAdherence();
-
-      emit(
-        DashboardLoaded(
-          adherence: data.adherence,
-          taken: data.taken,
-          missed: data.missed,
-          skipped: data.skipped,
-          todayDoses: data.todayDoses,
-          weekly: weekly,
-        ),
-      );
-    } catch (e) {
-      emit(DashboardError("Failed to mark dose"));
-    }
-  }
-
-  Future<void> _onAppResume(
-    AppResumed event,
-    Emitter<DashboardState> emit,
-  ) async {
-    add(LoadDashboard());
+    await markDoseTaken(event.doseId);
   }
 
   Future<void> _onMarkSkipped(
     MarkDoseSkippedEvent event,
     Emitter<DashboardState> emit,
   ) async {
-    if (state is! DashboardLoaded) return;
+    await markDoseSkipped(event.doseId);
+  }
 
-    try {
-      await markDoseSkipped(event.doseId);
+  void _onDoseStreamUpdated(
+    DoseStreamUpdated event,
+    Emitter<DashboardState> emit,
+  ) {
+    print("🔵 UI UPDATE TRIGGERED");
 
-      final user = await authRepository.getCurrentUser();
-      if (user != null) {
-        await syncService.sync(user.id);
+    final now = DateTime.now();
+
+    final todayDoses = event.doses;
+
+    int taken = 0;
+    int skipped = 0;
+    int missed = 0;
+    int pending = 0;
+
+    for (final d in todayDoses) {
+      print("👉 DOSE: ${d.id} | STATUS: ${d.status}");
+      
+      if (d.status == DoseStatus.taken) {
+        taken++;
+      } else if (d.status == DoseStatus.skipped) {
+        skipped++;
+      } else if (d.status == DoseStatus.pending) {
+        if (d.scheduledTime.isBefore(now)) {
+          missed++;
+        } else {
+          pending++;
+        }
+      } else if (d.status == DoseStatus.missed) {
+        missed++;
       }
-
-      final data = await getDashboardData();
-      final weekly = await getWeeklyAdherence();
-
-      emit(
-        DashboardLoaded(
-          adherence: data.adherence,
-          taken: data.taken,
-          missed: data.missed,
-          skipped: data.skipped,
-          todayDoses: data.todayDoses,
-          weekly: weekly,
-        ),
-      );
-    } catch (e) {
-      emit(DashboardError("Failed to skip dose"));
     }
-  }
 
-  Future<void> _onRefreshDashboard(
-    RefreshDashboard event,
-    Emitter<DashboardState> emit,
-  ) async {
-    print("🔥 GENERATING DOSES");
-
-    await refreshDailyDoses.call();
-
-    print("✅ DOSES GENERATED");
-  }
-
-  Future<void> _onGenerateAndLoadDashboard(
-    GenerateAndLoadDashboardEvent event,
-    Emitter<DashboardState> emit,
-  ) async {
-    print("🔥 GENERATE + LOAD START");
-
-    emit(DashboardLoading());
-
-    // 🔥 STEP 1: generate doses FIRST
-    await refreshDailyDoses();
-
-    print("✅ DOSES GENERATED");
-
-    // 🔥 STEP 2: THEN load dashboard
-    final data = await getDashboardData();
-    final weekly = await getWeeklyAdherence();
-
-    print("🔥 FINAL DATA COUNT: ${data.todayDoses.length}");
+    final total = todayDoses.length;
+    final adherence = total == 0 ? 0.0 : (taken / total) * 100;
 
     emit(
       DashboardLoaded(
-        adherence: data.adherence,
-        taken: data.taken,
-        missed: data.missed,
-        skipped: data.skipped,
-        todayDoses: data.todayDoses,
-        weekly: weekly,
+        adherence: adherence,
+        taken: taken,
+        missed: missed,
+        skipped: skipped,
+        pending: pending,
+        todayDoses: todayDoses,
+        weekly: _cachedWeekly ?? WeeklyAdherence.empty(),
       ),
     );
+  }
+
+  @override
+  Future<void> close() {
+    _hiveSub?.cancel();
+    _repoSub?.cancel();
+    return super.close();
   }
 }

@@ -3,8 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:med_guard/core/routes/app_go_router.dart';
-import 'package:med_guard/features/dashboard/presentation/bloc/dashboard_bloc.dart';
-import 'package:med_guard/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:med_guard/features/pillbox/presentation/bloc/pillbox_state.dart';
 import 'package:uuid/uuid.dart';
 import 'package:med_guard/features/pillbox/domain/entities/medicine.dart';
@@ -39,7 +37,8 @@ class _AddMedicinePageState extends State<AddMedicinePage> {
     if (picked == null) return;
 
     final now = DateTime.now();
-    final time = DateTime(
+
+    final newTime = DateTime(
       now.year,
       now.month,
       now.day,
@@ -47,7 +46,18 @@ class _AddMedicinePageState extends State<AddMedicinePage> {
       picked.minute,
     );
 
-    setState(() => _times.add(time));
+    final exists = _times.any(
+      (t) => t.hour == newTime.hour && t.minute == newTime.minute,
+    );
+
+    if (exists) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Time already added")));
+      return;
+    }
+
+    setState(() => _times.add(newTime));
   }
 
   Future<void> _pickDate(bool isStart) async {
@@ -90,23 +100,30 @@ class _AddMedicinePageState extends State<AddMedicinePage> {
       name: _nameController.text.trim(),
       dosage: _dosageController.text.trim(),
       times: _times,
-      updateAt: DateTime.now(),
+
+      updatedAt: DateTime.now(),
+
       isDeleted: false,
+      isDaily: true,
+
+      startDate: startDate,
+      endDate: endDate,
     );
 
     print("ADD BUTTON CLICKED");
 
-    context.read<PillboxBloc>().add(AddMedicineEvent(medicine));
+    context.read<PillboxBloc>().add(AddMedicineWithScheduleEvent(medicine));
+
+    context.go(AppRoutes.dashboardScreen);
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<PillboxBloc, PillboxState>(
       listener: (context, state) {
-        if (state is PillboxLoaded) {
+        print("STATE: $state");
+        if (state is PillboxLoaded && state.fromAdd) {
           print("✅ MEDICINE ADDED");
-
-          context.read<DashboardBloc>().add(GenerateAndLoadDashboardEvent());
 
           context.go(AppRoutes.dashboardScreen);
         }
@@ -167,7 +184,14 @@ class _AddMedicinePageState extends State<AddMedicinePage> {
                 Wrap(
                   spacing: 8,
                   children: _times
-                      .map((t) => Chip(label: Text(_formatTime(t))))
+                      .map(
+                        (t) => Chip(
+                          label: Text(_formatTime(t)),
+                          onDeleted: () {
+                            setState(() => _times.remove(t));
+                          },
+                        ),
+                      )
                       .toList(),
                 ),
 

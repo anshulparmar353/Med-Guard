@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,11 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:med_guard/core/di/injection.dart';
 import 'package:med_guard/core/notifier/auth_notifier.dart';
-import 'package:med_guard/core/services/connectivity_service.dart';
-import 'package:med_guard/core/services/missed_dose_service.dart';
-import 'package:med_guard/core/services/notification_action_handler.dart';
+import 'package:med_guard/core/services/daily_dose_generator.dart';
 import 'package:med_guard/core/services/notification_service.dart';
-import 'package:med_guard/core/services/sync_service.dart';
 import 'package:med_guard/core/sync/app_lifecycle_sync.dart';
 import 'package:med_guard/core/theme/app_theme.dart';
 import 'package:med_guard/features/auth/data/models/user_model.dart';
@@ -20,31 +16,23 @@ import 'package:med_guard/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:med_guard/features/auth/presentation/bloc/auth_event.dart';
 import 'package:med_guard/features/dashboard/data/models/dose_log_model.dart';
 import 'package:med_guard/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:med_guard/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:med_guard/features/pillbox/data/models/medicine_model.dart';
 import 'package:med_guard/features/pillbox/presentation/bloc/pillbox_bloc.dart';
 import 'package:med_guard/features/sync/data/models/sync_item.dart';
 import 'package:med_guard/features/sync/domain/entities/sync_type.dart';
 import 'package:provider/provider.dart';
-import 'package:timezone/data/latest.dart' as tz;
-import 'package:workmanager/workmanager.dart';
-import 'core/services/background_worker.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp();
-  tz.initializeTimeZones();
   await Hive.initFlutter();
 
-  // Hive adapters
   Hive.registerAdapter(UserModelAdapter());
-
   Hive.registerAdapter(MedicineModelAdapter());
-
   Hive.registerAdapter(DoseLogModelAdapter());
-
   Hive.registerAdapter(SyncItemAdapter());
-
   Hive.registerAdapter(SyncTypeAdapter());
 
   await Hive.openBox<UserModel>('authBox');
@@ -55,31 +43,11 @@ void main() async {
   await getIt.reset();
   await init();
 
-  final userId = FirebaseAuth.instance.currentUser?.uid;
-
-  if (userId != null) {
-    await getIt<ConnectivityService>().init();
-
-    getIt<ConnectivityService>().startSync(getIt<SyncService>(), userId);
-  }
-
-  final lifecycleSync = getIt<AppLifecycleSync>();
-  lifecycleSync.init();
-
   await NotificationService.init();
-
-  final handler = getIt<NotificationActionHandler>();
-  NotificationService.setHandler(handler);
 
   final authBloc = getIt<AuthBloc>()..add(AppStarted());
   final authNotifier = getIt<AuthNotifier>();
   final router = getIt<GoRouter>();
-
-  Timer.periodic(const Duration(minutes: 15), (_) {
-    getIt<MissedDoseService>().checkAndMarkMissed();
-  });
-
-  await Workmanager().initialize(callbackDispatcher, isInDebugMode: true);
 
   runApp(
     MultiProvider(
@@ -87,13 +55,26 @@ void main() async {
       child: MultiBlocProvider(
         providers: [
           BlocProvider.value(value: authBloc),
-          BlocProvider(create: (_) => getIt<DashboardBloc>()),
+          BlocProvider(
+            create: (_) => getIt<DashboardBloc>()..add(LoadDashboard()),
+          ),
           BlocProvider(create: (_) => getIt<PillboxBloc>()),
         ],
         child: MyApp(router: router),
       ),
     ),
   );
+
+  _postAppInit();
+}
+
+void _postAppInit() {
+  final lifecycleSync = getIt<AppLifecycleSync>();
+  lifecycleSync.init();
+
+  Future.microtask(() {
+    unawaited(getIt<DailyDoseGenerator>().generateTodayDoses());
+  });
 }
 
 class MyApp extends StatelessWidget {

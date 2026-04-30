@@ -27,8 +27,8 @@ class SyncRepositoryImpl implements SyncRepository {
       throw Exception("User not authenticated");
     }
 
-    final models = await datasource.downloadMedicines(user.uid); // ✅ FIXED
+    final models = await datasource.downloadMedicines(user.uid); 
 
-    return models.map((m) => m.toEntity()).toList(); // ✅ FIXED
+    return models.map((m) => m.toEntity()).toList(); 
   }
 }

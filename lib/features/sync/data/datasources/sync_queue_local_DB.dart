@@ -8,32 +8,55 @@ class SyncQueueLocalDataSource {
 
   SyncQueueLocalDataSource(this.box);
 
+  // ================= ADD =================
+
   Future<void> add(SyncItem item) async {
-    print("ADDING TO QUEUE");
+    print("📥 ADDING TO SYNC QUEUE: ${item.id}");
     await box.put(item.id, item);
   }
+
+  // ================= GET ALL =================
 
   List<SyncItem> getAll() {
     final items = box.values.toList();
 
+    // sort by createdAt (oldest first)
     items.sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
     return items;
   }
 
+  // ================= REMOVE =================
+
   Future<void> remove(String id) async {
+    print("🗑️ REMOVED FROM QUEUE: $id");
     await box.delete(id);
   }
 
+  // ================= RETRY =================
+
   Future<void> incrementRetry(String id) async {
     final item = box.get(id);
+
     if (item != null) {
-      item.retryCount += 1;
-      await item.save();
+      final updated = SyncItem(
+        id: item.id,
+        type: item.type,
+        data: item.data,
+        createdAt: item.createdAt,
+        retryCount: item.retryCount + 1,
+      );
+
+      await box.put(id, updated);
+
+      print("🔁 RETRY COUNT INCREASED: ${updated.retryCount}");
     }
   }
 
+  // ================= CLEAR =================
+
   Future<void> clear() async {
     await box.clear();
+    print("🧹 SYNC QUEUE CLEARED");
   }
 }

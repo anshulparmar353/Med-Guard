@@ -2,6 +2,7 @@
 import '../entities/medicine.dart';
 
 abstract class MedicineRepository {
+  
   Future<void> addMedicine(Medicine medicine);
 
   Future<List<Medicine>> getMedicines();

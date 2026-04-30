@@ -11,7 +11,7 @@ class GetWeeklyAdherence {
     final now = DateTime.now();
     final start = now.subtract(const Duration(days: 6));
 
-    final logs = await repo.getInRange(start, now);
+    final logs = await repo.getDosesInRange(start, now);
 
     final Map<String, List<dynamic>> grouped = {};
 
