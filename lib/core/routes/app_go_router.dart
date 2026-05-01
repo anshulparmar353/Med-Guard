@@ -18,7 +18,6 @@ import 'package:med_guard/features/pillbox/presentation/pages/add_medicine_page.
 import 'package:med_guard/features/pillbox/presentation/pages/pillbox_page.dart';
 import 'package:med_guard/features/pillbox/presentation/pages/update_medicine_page.dart';
 import 'package:med_guard/features/profile/presentation/bloc/profile_bloc.dart';
-import 'package:med_guard/features/profile/presentation/bloc/profile_event.dart';
 import 'package:med_guard/features/profile/presentation/bloc/profile_state.dart';
 import 'package:med_guard/features/profile/presentation/pages/edit_profile_page.dart';
 import 'package:med_guard/features/profile/presentation/pages/profile_page.dart';
@@ -85,56 +84,6 @@ class AppGoRouter {
       },
 
       routes: [
-        ShellRoute(
-          builder: (context, state, child) {
-            return HomePage(child: child);
-          },
-          routes: [
-            GoRoute(
-              path: AppRoutes.dashboardScreen,
-              builder: (context, state) => const DashboardPage(),
-            ),
-            GoRoute(
-              path: AppRoutes.pillbox,
-              builder: (context, state) => const PillboxPage(),
-            ),
-            GoRoute(
-              path: AppRoutes.profileScreen,
-              builder: (context, state) {
-                final authNotifier = context.read<AuthNotifier>();
-                final userId = authNotifier.userId;
-
-                if (userId == null) {
-                  return const LoginPage();
-                }
-
-                return BlocProvider(
-                  key: ValueKey(userId),
-                  create: (_) =>
-                      getIt<ProfileBloc>(param1: userId)..add(LoadProfile()),
-                  child: const ProfilePage(),
-                );
-              },
-            ),
-            GoRoute(
-              path: AppRoutes.intro,
-              builder: (_, _) => const IntroPage(),
-            ),
-            GoRoute(
-              path: AppRoutes.setup,
-              builder: (_, _) => const SetupPage(),
-            ),
-            GoRoute(
-              path: AppRoutes.addMedicine,
-              builder: (context, state) => const AddMedicinePage(),
-            ),
-            GoRoute(
-              path: AppRoutes.scanner,
-              builder: (context, state) => const ScannerPage(),
-            ),
-          ],
-        ),
-
         GoRoute(
           path: AppRoutes.splashScreen,
           builder: (context, state) => SplashPage(),
@@ -146,14 +95,18 @@ class AppGoRouter {
         ),
 
         GoRoute(
+          path: AppRoutes.signupScreen,
+          builder: (context, state) => const SignupPage(),
+        ),
+
+        GoRoute(
           path: AppRoutes.forgotScreen,
           builder: (context, state) => ForgotPasswordPage(),
         ),
 
-        GoRoute(
-          path: AppRoutes.signupScreen,
-          builder: (context, state) => const SignupPage(),
-        ),
+        GoRoute(path: AppRoutes.intro, builder: (_, _) => const IntroPage()),
+
+        GoRoute(path: AppRoutes.setup, builder: (_, _) => const SetupPage()),
 
         GoRoute(
           path: AppRoutes.emergencyScreen,
@@ -166,9 +119,7 @@ class AppGoRouter {
             final authNotifier = context.read<AuthNotifier>();
             final userId = authNotifier.userId;
 
-            if (userId == null) {
-              return const LoginPage();
-            }
+            if (userId == null) return const LoginPage();
 
             return BlocProvider.value(
               value: context.read<ProfileBloc>(),
@@ -188,6 +139,45 @@ class AppGoRouter {
 
             return UpdateMedicinePage(medicine: medicine);
           },
+        ),
+
+        ShellRoute(
+          builder: (context, state, child) {
+            return HomePage(child: child);
+          },
+          routes: [
+            GoRoute(
+              path: AppRoutes.dashboardScreen,
+              builder: (_, __) => const DashboardPage(),
+            ),
+            GoRoute(
+              path: AppRoutes.pillbox,
+              builder: (_, __) => const PillboxPage(),
+            ),
+            GoRoute(
+              path: AppRoutes.profileScreen,
+              builder: (context, state) {
+                final authNotifier = context.read<AuthNotifier>();
+                final userId = authNotifier.userId;
+
+                if (userId == null) return const LoginPage();
+
+                return BlocProvider(
+                  key: ValueKey(userId),
+                  create: (_) => getIt<ProfileBloc>(param1: userId),
+                  child: const ProfilePage(),
+                );
+              },
+            ),
+            GoRoute(
+              path: AppRoutes.addMedicine,
+              builder: (_, __) => const AddMedicinePage(),
+            ),
+            GoRoute(
+              path: AppRoutes.scanner,
+              builder: (_, __) => const ScannerPage(),
+            ),
+          ],
         ),
       ],
     );

@@ -88,6 +88,8 @@ class PillboxBloc extends Bloc<PillboxEvent, PillboxState> {
     try {
       await updateMedicineWithReschedule(event.medicine);
 
+      await getIt<DailyDoseGenerator>().generateTodayDoses();
+      
       final meds = await getMedicines();
       emit(PillboxLoaded(meds));
 

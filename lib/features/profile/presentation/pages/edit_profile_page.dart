@@ -1,7 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:go_router/go_router.dart';
 import 'package:med_guard/features/profile/domain/entities/profile_user.dart';
 import 'package:med_guard/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:med_guard/features/profile/presentation/bloc/profile_event.dart';
@@ -18,8 +17,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
   bool notificationsEnabled = true;
   bool emergencyEnabled = false;
 
-  File? selectedImage;
-
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final phoneController = TextEditingController();
@@ -33,60 +30,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
   void initState() {
     super.initState();
     context.read<ProfileBloc>().add(LoadProfile());
-  }
-
-  Future<void> pickFromGallery() async {
-    final image = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 70,
-    );
-
-    if (image != null) {
-      setState(() => selectedImage = File(image.path));
-    }
-  }
-
-  Future<void> pickFromCamera() async {
-    final image = await ImagePicker().pickImage(
-      source: ImageSource.camera,
-      imageQuality: 70,
-    );
-
-    if (image != null) {
-      setState(() => selectedImage = File(image.path));
-    }
-  }
-
-  void showImageOptions() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text("Camera"),
-              onTap: () {
-                Navigator.pop(context);
-                pickFromCamera();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo),
-              title: const Text("Gallery"),
-              onTap: () {
-                Navigator.pop(context);
-                pickFromGallery();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   void _prefill(ProfileUser? user) {
@@ -107,7 +50,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
 
     final user = ProfileUser(
-      id: DateTime.now().toString(), // or auth user id later
+      id: DateTime.now().toString(),
       name: nameController.text.trim(),
       age: int.tryParse(ageController.text) ?? 0,
       caregiverPhone: caregiverPhoneController.text.trim(),
@@ -116,7 +59,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
 
     context.read<ProfileBloc>().add(SaveProfile(user));
-    Navigator.pop(context);
+    context.pop();
   }
 
   @override
@@ -136,43 +79,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                /// 👤 PROFILE IMAGE
-                Center(
-                  child: GestureDetector(
-                    onTap: showImageOptions,
-                    child: Stack(
-                      children: [
-                        CircleAvatar(
-                          radius: 50,
-                          backgroundImage: selectedImage != null
-                              ? FileImage(selectedImage!)
-                              : const AssetImage("assets/profile.webp")
-                                    as ImageProvider,
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: CircleAvatar(
-                            radius: 18,
-                            backgroundColor: Colors.blue,
-                            child: const Icon(
-                              Icons.edit,
-                              size: 16,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 24),
 
                 _sectionTitle("Personal Information"),
 
                 _inputField("Full Name", nameController, Icons.person),
+
                 _inputField("Email", emailController, Icons.email),
+
                 _inputField("Phone Number", phoneController, Icons.phone),
 
                 const SizedBox(height: 16),
@@ -180,11 +93,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 _sectionTitle("Important for reminders"),
 
                 _inputField("Age", ageController, null),
+
                 _dropdownField("Gender", gender),
 
                 const SizedBox(height: 16),
 
-                /// 🚨 EMERGENCY SECTION
                 Row(
                   children: const [
                     Icon(Icons.contact_emergency, color: Colors.red),
@@ -206,6 +119,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   caregiverNameController,
                   Icons.person,
                 ),
+
                 _inputField(
                   "Contact Phone",
                   caregiverPhoneController,
@@ -236,7 +150,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   height: 50,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor: Colors.blue,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),

@@ -57,11 +57,19 @@ class _ProfilePageState extends State<ProfilePage> {
                     CircleAvatar(
                       radius: 45,
                       backgroundColor: Colors.blue,
-                      child: const Icon(
-                        Icons.person,
-                        size: 40,
-                        color: Colors.white,
-                      ),
+                      child: user?.name.isNotEmpty == true
+                          ? Text(
+                              user!.name[0].toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 24,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.person,
+                              size: 40,
+                              color: Colors.white,
+                            ),
                     ),
 
                     const SizedBox(height: 16),

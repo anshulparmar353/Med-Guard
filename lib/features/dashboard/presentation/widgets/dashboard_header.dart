@@ -74,10 +74,12 @@ class DashboardHeader extends StatelessWidget {
 
               CircleAvatar(
                 backgroundColor: Colors.blue,
-                child: Text(
-                  name.isNotEmpty ? name[0].toUpperCase() : "U",
-                  style: const TextStyle(color: Colors.white),
-                ),
+                child: name.isNotEmpty
+                    ? Text(
+                        name[0].toUpperCase(),
+                        style: const TextStyle(color: Colors.white),
+                      )
+                    : const Icon(Icons.person, color: Colors.white),
               ),
             ],
           );

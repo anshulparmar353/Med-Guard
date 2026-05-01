@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:med_guard/core/routes/app_go_router.dart';
 import 'package:med_guard/features/onboarding/setup/step_basic_info.dart';
 import 'package:med_guard/features/onboarding/setup/step_caregiver.dart';
 import 'package:med_guard/features/onboarding/setup/step_settings.dart';
@@ -51,7 +53,7 @@ class _SetupPageState extends State<SetupPage> {
       ),
     );
 
-
+    context.go(AppRoutes.dashboardScreen);
   }
 
   @override
@@ -99,7 +101,7 @@ class _SetupPageState extends State<SetupPage> {
             children: [
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: StepIndicator(step: step ),
+                child: StepIndicator(step: step),
               ),
 
               Expanded(

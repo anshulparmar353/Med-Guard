@@ -13,19 +13,42 @@ class DailyDoseGenerator {
     print("🔥 GENERATOR RUNNING");
 
     final medicines = medicineLocal.getMedicines();
-
-    print("📦 TOTAL MEDICINES: ${medicines.length}");
+    final existingDoses = await doseLocal.getAllDoses();
 
     final now = DateTime.now();
-
     final startOfDay = DateTime(now.year, now.month, now.day);
 
-    for (final med in medicines) {
-      print(
-        "💊 MED: ${med.name}, isDaily: ${med.isDaily}, times: ${med.times}",
-      );
+    print("📦 MED COUNT: ${medicines.length}");
+    print("📦 EXISTING DOSES: ${existingDoses.length}");
 
+    for (final d in existingDoses) {
+      final isToday =
+          d.scheduledTime.year == now.year &&
+          d.scheduledTime.month == now.month &&
+          d.scheduledTime.day == now.day;
+
+      if (!isToday) continue;
+
+      final stillValid = medicines.any((med) {
+        if (med.id != d.medicineId) return false;
+
+        return med.times.any(
+          (t) =>
+              t.hour == d.scheduledTime.hour &&
+              t.minute == d.scheduledTime.minute,
+        );
+      });
+
+      if (!stillValid) {
+        await doseLocal.deleteByMedicineId(d.id);
+        print("🗑 REMOVED OLD DOSE: ${d.id}");
+      }
+    }
+
+    for (final med in medicines) {
       if (!med.isDaily) continue;
+
+      print("💊 MED: ${med.name}");
 
       for (final time in med.times) {
         final scheduled = DateTime(
@@ -36,52 +59,45 @@ class DailyDoseGenerator {
           time.minute,
         );
 
-        print("⏱ CHECK TIME: $scheduled | now: $now");
-
         final doseId = DoseIdHelper.generate(med.id, scheduled);
-        
-        final exists = await doseLocal.getById(doseId);
 
-        if (exists != null) {
-          print("⚠️ DOSE EXISTS: $doseId");
-          continue;
-        }
+        final existing = await doseLocal.getById(doseId);
 
         final notificationId = doseId.hashCode;
 
-        if (scheduled.isBefore(now)) {
-          await doseLocal.addDoseIfNotExists(
-            DoseLogModel(
-              id: doseId,
-              medicineId: med.id,
+        if (existing != null) {
+          await doseLocal.update(
+            existing.copyWith(
               medicineName: med.name,
               scheduledTime: scheduled,
-              status: "missed",
-              updatedAt: now,
-              notificationId: notificationId,
+              updatedAt: DateTime.now(),
+
+              status: existing.status,
             ),
           );
 
-          print("❌ MISSED DOSE CREATED: $doseId");
+          print("♻️ UPDATED DOSE: $doseId");
           continue;
         }
+
+        final status = scheduled.isBefore(now) ? "missed" : "pending";
 
         final dose = DoseLogModel(
           id: doseId,
           medicineId: med.id,
           medicineName: med.name,
           scheduledTime: scheduled,
-          status: "pending",
-          updatedAt: scheduled,
+          status: status,
+          updatedAt: DateTime.now(),
           notificationId: notificationId,
         );
 
-        print("🆕 TRY ADD DOSE: $doseId");
-
         await doseLocal.addDoseIfNotExists(dose);
 
-        print("📦 DOSE CREATED: $doseId");
+        print("🆕 CREATED DOSE: $doseId");
       }
     }
+
+    print("✅ GENERATION COMPLETE");
   }
 }

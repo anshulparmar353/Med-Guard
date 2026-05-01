@@ -134,7 +134,7 @@ class _PillboxPageState extends State<PillboxPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  "Dosages: ${med.dosage}",
+                  "Doses: ${med.dosage}",
                   style: const TextStyle(color: Colors.grey),
                 ),
               ],
