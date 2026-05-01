@@ -10,24 +10,47 @@ class TrackingRemoteDataSource {
   }
 
   Future<void> uploadDose(String userId, Map<String, dynamic> data) async {
-    await _ref(userId).doc(data['id']).set(data, SetOptions(merge: true));
+    try {
+      await _ref(userId).doc(data['id']).set({
+        ...data,
+
+        "updatedAt": FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      print("❌ Upload dose error: $e");
+      rethrow;
+    }
   }
 
   Future<List<Map<String, dynamic>>> fetchDoses(
     String userId,
     DateTime? lastSync,
   ) async {
-    Query<Map<String, dynamic>> query = _ref(userId);
+    try {
+      Query<Map<String, dynamic>> query = _ref(userId);
 
-    if (lastSync != null) {
-      query = query.where(
-        'updatedAt',
-        isGreaterThan: Timestamp.fromDate(lastSync),
-      );
+      if (lastSync != null) {
+        query = query
+            .where('updatedAt', isGreaterThan: Timestamp.fromDate(lastSync))
+            .orderBy('updatedAt'); 
+      }
+
+      final snapshot = await query.get();
+
+      return snapshot.docs.map((e) {
+        final data = e.data();
+
+        if (data["updatedAt"] is Timestamp) {
+          data["updatedAt"] = (data["updatedAt"] as Timestamp).toDate();
+        } else {
+          data["updatedAt"] = DateTime.now();
+        }
+
+        return data;
+      }).toList();
+    } catch (e) {
+      print("❌ Fetch dose error: $e");
+      return [];
     }
-
-    final snapshot = await query.get();
-
-    return snapshot.docs.map((e) => e.data()).toList(); 
   }
 }

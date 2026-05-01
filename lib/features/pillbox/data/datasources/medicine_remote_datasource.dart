@@ -10,33 +10,61 @@ class MedicineRemoteDataSource {
   }
 
   Future<void> uploadMedicine(String userId, Map<String, dynamic> data) async {
-    print("Uploading to Firebase: $data");
-    await _ref(userId).doc(data['id']).set(data, SetOptions(merge: true));
+    try {
+      await _ref(userId).doc(data['id']).set({
+        ...data,
+
+        "updatedAt": FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      print("✅ Uploaded medicine: ${data['id']}");
+    } catch (e) {
+      print("❌ Upload error: $e");
+      rethrow;
+    }
   }
 
   Future<void> deleteMedicine(String userId, String id) async {
-    await _ref(userId).doc(id).set({
-      "id": id,
-      "isDeleted": true,
-      "updatedAt": Timestamp.now(),
-    }, SetOptions(merge: true));
+    try {
+      await _ref(userId).doc(id).set({
+        "id": id,
+        "isDeleted": true,
+
+        "updatedAt": FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      print("❌ Delete error: $e");
+      rethrow;
+    }
   }
 
-  Future<List<Object?>> fetchMedicines(
+  Future<List<Map<String, dynamic>>> fetchMedicines(
     String userId,
     DateTime? lastSyncedAt,
   ) async {
-    Query query = _ref(userId);
+    try {
+      Query<Map<String, dynamic>> query = _ref(userId);
 
-    if (lastSyncedAt != null) {
-      query = query.where(
-        'updatedAt',
-        isGreaterThan: Timestamp.fromDate(lastSyncedAt),
-      );
+      if (lastSyncedAt != null) {
+        query = query
+            .where('updatedAt', isGreaterThan: Timestamp.fromDate(lastSyncedAt))
+            .orderBy('updatedAt'); 
+      }
+
+      final snapshot = await query.get();
+
+      return snapshot.docs.map((e) {
+        final data = e.data();
+
+        if (data["updatedAt"] is Timestamp) {
+          data["updatedAt"] = (data["updatedAt"] as Timestamp).toDate();
+        }
+
+        return data;
+      }).toList();
+    } catch (e) {
+      print("❌ Fetch error: $e");
+      return [];
     }
-
-    final snapshot = await query.get();
-
-    return snapshot.docs.map((e) => e.data()).toList();
   }
 }

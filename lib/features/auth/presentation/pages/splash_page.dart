@@ -1,30 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:med_guard/core/notifier/auth_notifier.dart';
 import 'package:med_guard/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:med_guard/features/auth/presentation/bloc/auth_event.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
-
   @override
   State<SplashPage> createState() => _SplashPageState();
 }
 
 class _SplashPageState extends State<SplashPage> {
-  late final AuthBloc _authBloc;
-
   @override
   void initState() {
     super.initState();
-
-    _authBloc = context.read<AuthBloc>();
-
-    _initialize();
+    _start();
   }
 
-  Future<void> _initialize() async {
-    await Future.delayed(const Duration(seconds: 2));
-    _authBloc.add(AppStarted());
+  Future<void> _start() async {
+    await Future.delayed(const Duration(seconds: 3));
+
+    context.read<AuthNotifier>().completeSplash();
+
+    context.read<AuthBloc>().add(AppStarted());
   }
 
   @override
@@ -43,16 +41,12 @@ class _SplashPageState extends State<SplashPage> {
               ),
               child: const Icon(Icons.medication, size: 60, color: Colors.blue),
             ),
-
             const SizedBox(height: 24),
-
             const Text(
               "Med Guard",
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
-
             const SizedBox(height: 10),
-
             const Text(
               "Your medicine companion",
               style: TextStyle(fontSize: 16, color: Colors.grey),
@@ -61,5 +55,5 @@ class _SplashPageState extends State<SplashPage> {
         ),
       ),
     );
-  }             
+  }
 }

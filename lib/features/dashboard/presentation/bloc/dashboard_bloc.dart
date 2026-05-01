@@ -37,6 +37,8 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     on<DoseStreamUpdated>(_onDoseStreamUpdated);
 
     _listenToHive();
+
+    add(LoadDashboard());
   }
 
   void _listenToHive() {
@@ -102,7 +104,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
 
     for (final d in todayDoses) {
       print("👉 DOSE: ${d.id} | STATUS: ${d.status}");
-      
+
       if (d.status == DoseStatus.taken) {
         taken++;
       } else if (d.status == DoseStatus.skipped) {

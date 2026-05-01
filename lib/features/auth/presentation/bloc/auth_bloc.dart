@@ -103,7 +103,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     });
   }
   void _bindAutoSync(String userId) {
-    _connectionSub = connectivityService.connectionStream.listen((isOnline) async {
+    _connectionSub = connectivityService.connectionStream.listen((
+      isOnline,
+    ) async {
       if (isOnline) {
         print("🌐 INTERNET RESTORED → AUTO SYNC");
         await syncService.sync(userId);

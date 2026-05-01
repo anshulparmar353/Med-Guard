@@ -21,10 +21,10 @@ class DoseLogModelAdapter extends TypeAdapter<DoseLogModel> {
       medicineId: fields[1] as String,
       medicineName: fields[2] as String,
       scheduledTime: fields[3] as DateTime,
-      takenAt: fields[4] as DateTime?,
       status: fields[5] as String,
       updatedAt: fields[6] as DateTime,
       notificationId: fields[8] as int?,
+      takenAt: fields[4] as DateTime?,
       isDeleted: fields[7] as bool,
     );
   }

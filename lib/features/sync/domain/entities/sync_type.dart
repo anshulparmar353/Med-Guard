@@ -15,4 +15,5 @@ enum SyncType {
 
   @HiveField(3)
   updateDose,
+
 }

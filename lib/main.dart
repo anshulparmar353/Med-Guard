@@ -5,20 +5,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/adapters.dart';
+
 import 'package:med_guard/core/di/injection.dart';
 import 'package:med_guard/core/notifier/auth_notifier.dart';
 import 'package:med_guard/core/services/daily_dose_generator.dart';
 import 'package:med_guard/core/services/notification_service.dart';
 import 'package:med_guard/core/sync/app_lifecycle_sync.dart';
 import 'package:med_guard/core/theme/app_theme.dart';
+
 import 'package:med_guard/features/auth/data/models/user_model.dart';
 import 'package:med_guard/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:med_guard/features/auth/presentation/bloc/auth_event.dart';
+import 'package:med_guard/features/auth/presentation/bloc/auth_state.dart';
+
 import 'package:med_guard/features/dashboard/data/models/dose_log_model.dart';
 import 'package:med_guard/features/dashboard/presentation/bloc/dashboard_bloc.dart';
-import 'package:med_guard/features/dashboard/presentation/bloc/dashboard_event.dart';
+
 import 'package:med_guard/features/pillbox/data/models/medicine_model.dart';
 import 'package:med_guard/features/pillbox/presentation/bloc/pillbox_bloc.dart';
+
+import 'package:med_guard/features/profile/data/models/profile_user_model.dart';
+import 'package:med_guard/features/profile/presentation/bloc/profile_bloc.dart';
+import 'package:med_guard/features/profile/presentation/bloc/profile_state.dart';
+
 import 'package:med_guard/features/sync/data/models/sync_item.dart';
 import 'package:med_guard/features/sync/domain/entities/sync_type.dart';
 import 'package:provider/provider.dart';
@@ -27,6 +36,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp();
+
   await Hive.initFlutter();
 
   Hive.registerAdapter(UserModelAdapter());
@@ -34,11 +44,13 @@ void main() async {
   Hive.registerAdapter(DoseLogModelAdapter());
   Hive.registerAdapter(SyncItemAdapter());
   Hive.registerAdapter(SyncTypeAdapter());
+  Hive.registerAdapter(ProfileUserModelAdapter());
 
   await Hive.openBox<UserModel>('authBox');
   await Hive.openBox<MedicineModel>('medicines');
   await Hive.openBox<DoseLogModel>('dosesBox');
   await Hive.openBox<SyncItem>('syncQueueBox');
+  await Hive.openBox<ProfileUserModel>('profileBox');
 
   await getIt.reset();
   await init();
@@ -52,29 +64,70 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [ChangeNotifierProvider.value(value: authNotifier)],
-      child: MultiBlocProvider(
-        providers: [
-          BlocProvider.value(value: authBloc),
-          BlocProvider(
-            create: (_) => getIt<DashboardBloc>()..add(LoadDashboard()),
-          ),
-          BlocProvider(create: (_) => getIt<PillboxBloc>()),
-        ],
-        child: MyApp(router: router),
-      ),
+      child: MyAppWrapper(authBloc: authBloc, router: router),
     ),
   );
-
-  _postAppInit();
+  Future.microtask(_postAppInit);
 }
 
 void _postAppInit() {
   final lifecycleSync = getIt<AppLifecycleSync>();
   lifecycleSync.init();
 
-  Future.microtask(() {
+  Future.delayed(const Duration(seconds: 1), () {
     unawaited(getIt<DailyDoseGenerator>().generateTodayDoses());
   });
+}
+
+class MyAppWrapper extends StatelessWidget {
+  final AuthBloc authBloc;
+  final GoRouter router;
+
+  const MyAppWrapper({super.key, required this.authBloc, required this.router});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider<AuthBloc>(
+      create: (_) => authBloc,
+
+      child: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, authState) {
+          String? userId;
+
+          if (authState is AuthAuthenticated) {
+            userId = authState.user.id;
+          }
+
+          return MultiBlocProvider(
+            providers: [
+              if (userId != null)
+                BlocProvider(
+                  key: ValueKey(userId),
+                  create: (_) => getIt<ProfileBloc>(param1: userId),
+                ),
+
+              BlocProvider(
+                key: ValueKey(userId),
+                create: (_) => getIt<DashboardBloc>(),
+              ),
+
+              BlocProvider(create: (_) => getIt<PillboxBloc>(param1: userId)),
+            ],
+            child: userId != null
+                ? BlocListener<ProfileBloc, ProfileState>(
+                    listener: (context, state) {
+                      if (state is ProfileLoaded) {
+                        getIt<AuthNotifier>().triggerRouterRefresh();
+                      }
+                    },
+                    child: MyApp(router: router),
+                  )
+                : MyApp(router: router),
+          );
+        },
+      ),
+    );
+  }
 }
 
 class MyApp extends StatelessWidget {

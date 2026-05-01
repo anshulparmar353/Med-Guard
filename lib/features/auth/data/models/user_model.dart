@@ -16,7 +16,6 @@ class UserModel extends HiveObject {
     required this.email,
   });
 
-  /// 🔁 Entity → Model
   factory UserModel.fromEntity(User user) {
     return UserModel(
       id: user.id,
@@ -24,7 +23,6 @@ class UserModel extends HiveObject {
     );
   }
 
-  /// 🔁 Model → Entity
   User toEntity() {
     return User(
       id: id,

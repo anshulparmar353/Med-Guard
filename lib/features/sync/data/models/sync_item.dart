@@ -11,7 +11,6 @@ class SyncItem {
   @HiveField(1)
   final SyncType type;
 
-  // 🔥 FIXED TYPE
   @HiveField(2)
   final Map<String, dynamic> data;
 

@@ -43,6 +43,12 @@ class _SignupPageState extends State<SignupPage> {
                 context,
               ).showSnackBar(SnackBar(content: Text(state.message)));
             }
+
+            if (state is AuthAuthenticated) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Account created successfully")),
+              );
+            }
           },
           builder: (context, state) {
             return Center(
@@ -50,7 +56,6 @@ class _SignupPageState extends State<SignupPage> {
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
-                    /// LOGO
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -66,7 +71,6 @@ class _SignupPageState extends State<SignupPage> {
 
                     const SizedBox(height: 16),
 
-                    /// TITLE
                     const Text(
                       "Create Account",
                       style: TextStyle(
@@ -84,7 +88,6 @@ class _SignupPageState extends State<SignupPage> {
 
                     const SizedBox(height: 30),
 
-                    /// CARD
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -102,7 +105,6 @@ class _SignupPageState extends State<SignupPage> {
                         key: _formKey,
                         child: Column(
                           children: [
-                            /// EMAIL
                             TextFormField(
                               controller: emailController,
                               keyboardType: TextInputType.emailAddress,
@@ -126,7 +128,6 @@ class _SignupPageState extends State<SignupPage> {
 
                             const SizedBox(height: 16),
 
-                            /// PASSWORD
                             TextFormField(
                               controller: passwordController,
                               obscureText: obscurePassword,
@@ -165,7 +166,6 @@ class _SignupPageState extends State<SignupPage> {
 
                             const SizedBox(height: 16),
 
-                            /// CONFIRM PASSWORD
                             TextFormField(
                               controller: confirmPasswordController,
                               obscureText: obscureConfirm,
@@ -201,7 +201,6 @@ class _SignupPageState extends State<SignupPage> {
 
                             const SizedBox(height: 20),
 
-                            /// SIGNUP BUTTON
                             SizedBox(
                               width: double.infinity,
                               height: 50,
@@ -285,7 +284,6 @@ class _SignupPageState extends State<SignupPage> {
 
                     const SizedBox(height: 20),
 
-                    /// LOGIN NAVIGATION
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [

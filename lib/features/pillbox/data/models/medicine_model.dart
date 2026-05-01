@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hive/hive.dart';
+import 'package:med_guard/utils/daetime_helper.dart';
 import '../../domain/entities/medicine.dart';
 
 part 'medicine_model.g.dart';
@@ -28,10 +29,10 @@ class MedicineModel extends HiveObject {
   bool isDaily;
 
   @HiveField(7)
-  DateTime? startDate; // ✅ NEW
+  DateTime? startDate;
 
   @HiveField(8)
-  DateTime? endDate; // ✅ NEW
+  DateTime? endDate;
 
   MedicineModel({
     required this.id,
@@ -45,19 +46,17 @@ class MedicineModel extends HiveObject {
     this.endDate,
   });
 
-  // ================= ENTITY =================
-
   Medicine toEntity() {
     return Medicine(
       id: id,
       name: name,
       dosage: dosage,
       times: times,
-      updatedAt: updatedAt, // ✅ FIXED
+      updatedAt: updatedAt,
       isDeleted: isDeleted,
       isDaily: isDaily,
-      startDate: startDate, // ✅ NEW
-      endDate: endDate, // ✅ NEW
+      startDate: startDate,
+      endDate: endDate,
     );
   }
 
@@ -67,15 +66,13 @@ class MedicineModel extends HiveObject {
       name: med.name,
       dosage: med.dosage,
       times: med.times,
-      updatedAt: med.updatedAt, // ✅ FIXED
+      updatedAt: med.updatedAt,
       isDeleted: med.isDeleted,
       isDaily: med.isDaily,
-      startDate: med.startDate, // ✅ NEW
-      endDate: med.endDate, // ✅ NEW
+      startDate: med.startDate,
+      endDate: med.endDate,
     );
   }
-
-  // ================= JSON =================
 
   factory MedicineModel.fromJson(Map<String, dynamic> json) {
     return MedicineModel(
@@ -87,10 +84,8 @@ class MedicineModel extends HiveObject {
           (json['times'] as List?)?.map((e) => DateTime.parse(e)).toList() ??
           [],
 
-      updatedAt: json['updatedAt'] is Timestamp
-          ? (json['updatedAt'] as Timestamp).toDate()
-          : DateTime.parse(json['updatedAt']),
-
+      updatedAt: parseTimestamp(json['updatedAt']),
+      
       isDeleted: json['isDeleted'] ?? false,
       isDaily: json['isDaily'] ?? true,
 
@@ -117,8 +112,8 @@ class MedicineModel extends HiveObject {
       "updatedAt": updatedAt.toIso8601String(),
       "isDeleted": isDeleted,
       "isDaily": isDaily,
-      "startDate": startDate?.toIso8601String(), // ✅ NEW
-      "endDate": endDate?.toIso8601String(), // ✅ NEW
+      "startDate": startDate?.toIso8601String(),
+      "endDate": endDate?.toIso8601String(),
     };
   }
 }

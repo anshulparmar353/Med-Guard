@@ -53,6 +53,16 @@ import 'package:med_guard/features/pillbox/domain/usecases/get_medicines.dart';
 import 'package:med_guard/features/pillbox/domain/usecases/replace_all_medicine.dart';
 import 'package:med_guard/features/pillbox/domain/usecases/update_medicine_with_reschedule.dart';
 import 'package:med_guard/features/pillbox/presentation/bloc/pillbox_bloc.dart';
+import 'package:med_guard/features/profile/data/datasources/profile_local_datasource.dart';
+import 'package:med_guard/features/profile/data/datasources/profile_remote_datasource.dart';
+import 'package:med_guard/features/profile/data/models/profile_user_model.dart';
+import 'package:med_guard/features/profile/data/repository_impl/profile_user_repo_impl.dart';
+import 'package:med_guard/features/profile/domain/repository/profile_user_repository.dart';
+import 'package:med_guard/features/profile/domain/usecases/clear_profile_usecase.dart';
+import 'package:med_guard/features/profile/domain/usecases/get_profile_user_usecase.dart';
+import 'package:med_guard/features/profile/domain/usecases/save_profile_user_usecase.dart';
+import 'package:med_guard/features/profile/domain/usecases/watch_profile_user_usecase.dart';
+import 'package:med_guard/features/profile/presentation/bloc/profile_bloc.dart';
 
 import 'package:med_guard/features/reminder/data/datasources/reminder_local_datasource.dart';
 import 'package:med_guard/features/reminder/data/repository_impl/reminder_repository_impl.dart';
@@ -74,6 +84,8 @@ final getIt = GetIt.instance;
 Future<void> init() async {
   // Firebase
   getIt.registerLazySingleton(() => FirebaseAuth.instance);
+  
+  getIt.registerLazySingleton(() => FirebaseFirestore.instance);
 
   getIt.registerLazySingleton(() => FlutterLocalNotificationsPlugin());
 
@@ -115,6 +127,10 @@ Future<void> init() async {
     () => Hive.box<DoseLogModel>('dosesBox'),
   );
 
+  getIt.registerLazySingleton<Box<ProfileUserModel>>(
+    () => Hive.box<ProfileUserModel>('profileBox'),
+  );
+
   // ================= AUTH =================
 
   getIt.registerLazySingleton<AuthLocalDataSource>(
@@ -122,7 +138,7 @@ Future<void> init() async {
   );
 
   getIt.registerLazySingleton<AuthRemoteDataSource>(
-    () => AuthRemoteDataSource(),
+    () => AuthRemoteDataSource(getIt()),
   );
 
   getIt.registerLazySingleton<AuthRepository>(
@@ -303,6 +319,27 @@ Future<void> init() async {
       trackingRepository: getIt(),
       local: getIt(),
     ),
+  );
+
+  // ================= PILLBOX =================
+
+  getIt.registerLazySingleton<ProfileLocalDataSource>(
+    () => ProfileLocalDataSource(Hive.box<ProfileUserModel>('profileBox')),
+  );
+
+  getIt.registerLazySingleton(() => ProfileRemoteDataSource(getIt()));
+
+  getIt.registerLazySingleton<ProfileUserRepository>(
+    () => ProfileRepositoryImpl(getIt(), getIt()),
+  );
+
+  getIt.registerLazySingleton(() => GetProfileUserUseCase(getIt()));
+  getIt.registerLazySingleton(() => SaveProfileUserUseCase(getIt()));
+  getIt.registerLazySingleton(() => WatchProfileUserUseCase(getIt()));
+  getIt.registerLazySingleton(() => ClearProfileUseCase(getIt()));
+
+  getIt.registerFactoryParam<ProfileBloc, String, void>(
+    (userId, _) => ProfileBloc(getIt(), getIt(), getIt(), userId),
   );
 
   // ================= NOTIFICATION =================
