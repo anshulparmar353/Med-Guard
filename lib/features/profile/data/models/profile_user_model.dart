@@ -25,11 +25,23 @@ class ProfileUserModel extends HiveObject {
   @HiveField(5)
   DateTime updatedAt;
 
+  @HiveField(6)
+  String? caregiverName;
+
+  @HiveField(7)
+  String? userPhone;
+
+  @HiveField(8)
+  bool? onboardingCompleted;
+
   ProfileUserModel({
     required this.id,
     required this.name,
     required this.age,
+    this.caregiverName,
+    this.userPhone,
     this.caregiverPhone,
+     this.onboardingCompleted,
     required this.emergencyEnabled,
     required this.updatedAt,
   });
@@ -39,7 +51,10 @@ class ProfileUserModel extends HiveObject {
       id: user.id,
       name: user.name,
       age: user.age,
+      caregiverName: user.caregiverName,
+      userPhone: user.userPhone,
       caregiverPhone: user.caregiverPhone,
+      onboardingCompleted:  user.onboardingCompleted,
       emergencyEnabled: user.emergencyEnabled,
       updatedAt: user.updatedAt,
     );
@@ -50,6 +65,9 @@ class ProfileUserModel extends HiveObject {
       id: id,
       name: name,
       age: age,
+      caregiverName: caregiverName,
+      userPhone: userPhone,
+      onboardingCompleted: onboardingCompleted,
       caregiverPhone: caregiverPhone,
       emergencyEnabled: emergencyEnabled,
       updatedAt: updatedAt,
@@ -61,6 +79,9 @@ class ProfileUserModel extends HiveObject {
       "id": id,
       "name": name,
       "age": age,
+      "caregiverName": caregiverName,
+      "userPhone": userPhone,
+      "onboardingCompleted": onboardingCompleted,
       "caregiverPhone": caregiverPhone,
       "emergencyEnabled": emergencyEnabled,
       "updatedAt": Timestamp.fromDate(updatedAt),
@@ -72,6 +93,9 @@ class ProfileUserModel extends HiveObject {
       id: json["id"],
       name: json["name"] ?? "",
       age: json["age"] ?? 0,
+      caregiverName: json['caregiverName'],
+      userPhone: json['userPhone'],
+      onboardingCompleted: json['onboardingCompleted'],
       caregiverPhone: json["caregiverPhone"],
       emergencyEnabled: json["emergencyEnabled"] ?? false,
       updatedAt: parseTimestamp(json['updatedAt']),

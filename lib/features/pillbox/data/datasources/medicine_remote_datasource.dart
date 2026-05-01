@@ -24,20 +24,6 @@ class MedicineRemoteDataSource {
     }
   }
 
-  Future<void> deleteMedicine(String userId, String id) async {
-    try {
-      await _ref(userId).doc(id).set({
-        "id": id,
-        "isDeleted": true,
-
-        "updatedAt": FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    } catch (e) {
-      print("❌ Delete error: $e");
-      rethrow;
-    }
-  }
-
   Future<List<Map<String, dynamic>>> fetchMedicines(
     String userId,
     DateTime? lastSyncedAt,
@@ -48,7 +34,7 @@ class MedicineRemoteDataSource {
       if (lastSyncedAt != null) {
         query = query
             .where('updatedAt', isGreaterThan: Timestamp.fromDate(lastSyncedAt))
-            .orderBy('updatedAt'); 
+            .orderBy('updatedAt');
       }
 
       final snapshot = await query.get();

@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:med_guard/features/profile/presentation/bloc/profile_bloc.dart';
+import 'package:med_guard/features/profile/presentation/bloc/profile_state.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class EmergencyPage extends StatefulWidget {
   const EmergencyPage({super.key});
@@ -12,6 +18,8 @@ class _EmergencyPageState extends State<EmergencyPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
+
+  bool _loading = false;
 
   @override
   void initState() {
@@ -70,9 +78,7 @@ class _EmergencyPageState extends State<EmergencyPage>
 
               Center(
                 child: GestureDetector(
-                  onTap: () {
-                    HapticFeedback.heavyImpact();
-                  },
+                  onLongPress: () => _triggerSOS(),
                   child: ScaleTransition(
                     scale: _scaleAnimation,
                     child: Container(
@@ -90,24 +96,26 @@ class _EmergencyPageState extends State<EmergencyPage>
                           ),
                         ],
                       ),
-                      child: const Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            "SOS",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 48,
-                              fontWeight: FontWeight.bold,
+                      child: _loading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  "SOS",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 48,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 6),
+                                Text(
+                                  "Press for Help",
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ],
                             ),
-                          ),
-                          SizedBox(height: 6),
-                          Text(
-                            "Press for Help",
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ],
-                      ),
                     ),
                   ),
                 ),
@@ -120,7 +128,7 @@ class _EmergencyPageState extends State<EmergencyPage>
                 icon: Icons.call,
                 title: "Call Ambulance",
                 subtitle: "Emergency: 108",
-                onTap: () {},
+                onTap: () => callNumber("6232075318"),
               ),
 
               const SizedBox(height: 16),
@@ -140,13 +148,153 @@ class _EmergencyPageState extends State<EmergencyPage>
                 icon: Icons.location_on,
                 title: "Nearby Hospitals",
                 subtitle: "Find closest medical centers",
-                onTap: () {},
+                onTap: () async {
+                  final url = Uri.parse(
+                    "https://www.google.com/maps/search/hospitals+near+me/",
+                  );
+                  await launchUrl(url);
+                },
               ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _triggerSOS() async {
+    if (_loading) return;
+
+    setState(() => _loading = true);
+
+    try {
+      HapticFeedback.heavyImpact();
+
+      final confirm = await _confirmSOS();
+      if (!confirm) return;
+
+      final profileState = context.read<ProfileBloc>().state;
+
+      if (profileState is! ProfileLoaded) {
+        _showError("Profile not loaded");
+        return;
+      }
+
+      final phone = profileState.user?.caregiverPhone;
+
+      if (phone == null || phone.isEmpty) {
+        _showError("Add caregiver number in profile");
+        return;
+      }
+
+      final locStatus = await Permission.location.request();
+
+      if (locStatus.isPermanentlyDenied) {
+        _showError("Enable location from settings");
+        await openAppSettings();
+        return;
+      }
+
+      String location = "Location unavailable";
+
+      if (locStatus.isGranted) {
+        try {
+          location = await getLocationLink();
+        } catch (_) {}
+      }
+
+      final message =
+          "🚨 EMERGENCY ALERT\nUser needs help!\nLocation: $location";
+
+      await sendSMS(phone, message);
+
+      final call = await _askCall();
+
+      if (call == true) {
+        await callNumber(phone);
+      }
+
+      _showSuccess("Emergency alert initiated");
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
+  Future<bool?> _askCall() {
+    return showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Call Caregiver"),
+        content: const Text("Do you want to call now?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("No"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Call"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<bool> _confirmSOS() async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text("Emergency SOS"),
+            content: const Text("Send alert to caregiver?"),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text("Cancel"),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                child: const Text(
+                  "Send",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
+  Future<void> callNumber(String number) async {
+    final Uri url = Uri.parse("tel:$number");
+
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    }
+  }
+
+  Future<String> getLocationLink() async {
+    final position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+
+    return "https://maps.google.com/?q=${position.latitude},${position.longitude}";
+  }
+
+  Future<void> sendSMS(String phone, String message) async {
+    final Uri uri = Uri.parse(
+      "sms:$phone?body=${Uri.encodeComponent(message)}",
+    );
+
+    await launchUrl(uri);
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  void _showSuccess(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
   Widget _actionCard({

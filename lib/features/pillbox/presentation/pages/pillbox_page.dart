@@ -113,8 +113,8 @@ class _PillboxPageState extends State<PillboxPage> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(12),
+              color: Colors.blue.shade100,
+              borderRadius: BorderRadius.circular(24),
             ),
             child: const Icon(Icons.medication, color: Colors.blue),
           ),

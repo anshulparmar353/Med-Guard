@@ -9,6 +9,7 @@ import 'package:med_guard/features/onboarding/widget/step_indicator.dart';
 import 'package:med_guard/features/profile/domain/entities/profile_user.dart';
 import 'package:med_guard/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:med_guard/features/profile/presentation/bloc/profile_event.dart';
+import 'package:med_guard/features/profile/presentation/bloc/profile_state.dart';
 
 class SetupPage extends StatefulWidget {
   const SetupPage({super.key});
@@ -24,6 +25,9 @@ class _SetupPageState extends State<SetupPage> {
   int age = 0;
   String? phone;
   bool emergency = false;
+  String? caregiverName;
+  String? caregiverPhone;
+  String? userPhone;
 
   void next() {
     if (step < 2) {
@@ -40,20 +44,28 @@ class _SetupPageState extends State<SetupPage> {
   void finish() {
     final userId = context.read<ProfileBloc>().userId;
 
-    context.read<ProfileBloc>().add(
+    final bloc = context.read<ProfileBloc>();
+
+    bloc.add(
       SaveProfile(
         ProfileUser(
           id: userId,
           name: name,
           age: age,
-          caregiverPhone: phone,
+          caregiverName: caregiverName,
+          caregiverPhone: caregiverPhone,
           emergencyEnabled: emergency,
           updatedAt: DateTime.now(),
+          onboardingCompleted: true,
         ),
       ),
     );
 
-    context.go(AppRoutes.dashboardScreen);
+    bloc.stream.firstWhere((s) => s is ProfileLoaded).then((_) {
+      Future.delayed(const Duration(milliseconds: 200), () {
+        context.go(AppRoutes.dashboardScreen);
+      });
+    });
   }
 
   @override
@@ -73,8 +85,9 @@ class _SetupPageState extends State<SetupPage> {
 
       case 1:
         child = StepCaregiver(
-          onNext: (p) {
-            phone = p;
+          onNext: (name, phone) {
+            caregiverName = name;
+            caregiverPhone = phone;
             next();
           },
           onBack: back,

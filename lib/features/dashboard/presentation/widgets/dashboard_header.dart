@@ -69,7 +69,6 @@ class DashboardHeader extends StatelessWidget {
                 ),
               ),
 
-              const Icon(Icons.notifications_none),
               const SizedBox(width: 12),
 
               CircleAvatar(

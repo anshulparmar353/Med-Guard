@@ -100,21 +100,14 @@ class _AddMedicinePageState extends State<AddMedicinePage> {
       name: _nameController.text.trim(),
       dosage: _dosageController.text.trim(),
       times: _times,
-
       updatedAt: DateTime.now(),
-
       isDeleted: false,
       isDaily: true,
-
       startDate: startDate,
       endDate: endDate,
     );
 
-    print("ADD BUTTON CLICKED");
-
     context.read<PillboxBloc>().add(AddMedicineWithScheduleEvent(medicine));
-
-    context.go(AppRoutes.dashboardScreen);
   }
 
   @override

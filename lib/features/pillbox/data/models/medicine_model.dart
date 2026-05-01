@@ -74,6 +74,30 @@ class MedicineModel extends HiveObject {
     );
   }
 
+  MedicineModel copyWith({
+    String? id,
+    String? name,
+    String? dosage,
+    List<DateTime>? times,
+    DateTime? updatedAt,
+    bool? isDeleted,
+    bool? isDaily,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    return MedicineModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      dosage: dosage ?? this.dosage,
+      times: times ?? this.times,
+      updatedAt: updatedAt ?? this.updatedAt,
+      isDeleted: isDeleted ?? this.isDeleted,
+      isDaily: isDaily ?? this.isDaily,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+    );
+  }
+
   factory MedicineModel.fromJson(Map<String, dynamic> json) {
     return MedicineModel(
       id: json['id'] ?? '',
@@ -85,7 +109,7 @@ class MedicineModel extends HiveObject {
           [],
 
       updatedAt: parseTimestamp(json['updatedAt']),
-      
+
       isDeleted: json['isDeleted'] ?? false,
       isDaily: json['isDaily'] ?? true,
 

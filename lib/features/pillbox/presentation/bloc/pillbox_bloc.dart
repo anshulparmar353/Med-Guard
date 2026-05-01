@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:med_guard/core/di/injection.dart';
 import 'package:med_guard/core/services/daily_dose_generator.dart';
 import 'package:med_guard/core/sync/sync_manager.dart';
+import 'package:med_guard/features/pillbox/domain/repository/medicine_repository.dart';
 import 'package:med_guard/features/pillbox/domain/usecases/add_medicine_with_schedule.dart';
 import 'package:med_guard/features/pillbox/domain/usecases/delete_medicine_with_cleanup.dart';
 import 'package:med_guard/features/pillbox/domain/usecases/get_medicines.dart';
@@ -19,6 +20,7 @@ class PillboxBloc extends Bloc<PillboxEvent, PillboxState> {
   final UpdateMedicineWithReschedule updateMedicineWithReschedule;
   final SyncMedicines syncMedicines;
   final SyncManager syncManager;
+  final MedicineRepository medicineRepository;
 
   PillboxBloc({
     required this.getMedicines,
@@ -27,6 +29,7 @@ class PillboxBloc extends Bloc<PillboxEvent, PillboxState> {
     required this.updateMedicineWithReschedule,
     required this.syncMedicines,
     required this.syncManager,
+    required this.medicineRepository,
   }) : super(PillboxInitial()) {
     on<LoadMedicines>(_onLoad);
     on<AddMedicineWithScheduleEvent>(_onAdd);
@@ -55,6 +58,8 @@ class PillboxBloc extends Bloc<PillboxEvent, PillboxState> {
       await addMedicineWithSchedule(event.medicine);
 
       await getIt<DailyDoseGenerator>().generateTodayDoses();
+
+      await Future.delayed(const Duration(milliseconds: 200));
 
       final meds = await getMedicines();
       emit(PillboxLoaded(meds, fromAdd: true));
@@ -89,7 +94,7 @@ class PillboxBloc extends Bloc<PillboxEvent, PillboxState> {
       await updateMedicineWithReschedule(event.medicine);
 
       await getIt<DailyDoseGenerator>().generateTodayDoses();
-      
+
       final meds = await getMedicines();
       emit(PillboxLoaded(meds));
 
@@ -101,10 +106,8 @@ class PillboxBloc extends Bloc<PillboxEvent, PillboxState> {
 
   Future<void> _triggerSync() async {
     syncManager.scheduleSync(() async {
-      try {
-        final meds = await getMedicines();
-        await syncMedicines(meds);
-      } catch (_) {}
+      final meds = await medicineRepository.getMedicines();
+      await syncMedicines(meds);
     });
   }
 }

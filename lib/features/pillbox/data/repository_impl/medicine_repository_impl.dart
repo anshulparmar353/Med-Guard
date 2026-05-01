@@ -27,7 +27,7 @@ class MedicineRepositoryImpl implements MedicineRepository {
 
     try {
       await local.addMedicine(med);
-      await local.box.flush(); 
+      await local.box.flush();
 
       print("✅ SAVED TO HIVE: ${med.name}");
       final cleanData = _cleanForHive(med.toJson());
@@ -52,16 +52,26 @@ class MedicineRepositoryImpl implements MedicineRepository {
 
   @override
   Future<void> deleteMedicine(String id) async {
-    await local.deleteMedicine(id);
+    final med = local.box.get(id);
+
+    if (med == null) return;
+
+    final updated = med.copyWith(isDeleted: true, updatedAt: DateTime.now());
+
+    await local.addMedicine(updated); 
+
+    final cleanData = _cleanForHive(updated.toJson());
 
     await queue.add(
       SyncItem(
-        id: id,
+        id: updated.id,
         type: SyncType.delete,
-        data: {'id': id},
+        data: cleanData, 
         createdAt: DateTime.now(),
       ),
     );
+
+    print("🗑 SOFT DELETE QUEUED: ${updated.id}");
   }
 
   @override

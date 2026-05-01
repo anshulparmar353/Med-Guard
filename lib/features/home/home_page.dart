@@ -17,7 +17,6 @@ class _HomePageState extends State<HomePage> {
   final List<String> _routes = [
     AppRoutes.dashboardScreen,
     AppRoutes.addMedicine,
-    AppRoutes.scanner,
     AppRoutes.pillbox,
     AppRoutes.profileScreen,
   ];
@@ -51,7 +50,7 @@ class _HomePageState extends State<HomePage> {
           onTap: _onTap,
 
           type: BottomNavigationBarType.fixed,
-          elevation: 0, 
+          elevation: 0,
 
           backgroundColor: Colors.transparent,
 
@@ -76,11 +75,6 @@ class _HomePageState extends State<HomePage> {
               icon: Icon(Icons.add_circle_outline),
               activeIcon: Icon(Icons.add_circle),
               label: "Add",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.camera_alt_outlined),
-              activeIcon: Icon(Icons.camera_alt),
-              label: "Scanner",
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.medication_outlined),

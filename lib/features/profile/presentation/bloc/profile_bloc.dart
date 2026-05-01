@@ -1,5 +1,4 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:med_guard/features/profile/domain/entities/profile_user.dart';
 import 'package:med_guard/features/profile/domain/usecases/get_profile_user_usecase.dart';
 import 'package:med_guard/features/profile/domain/usecases/save_profile_user_usecase.dart';
 import 'package:med_guard/features/profile/domain/usecases/watch_profile_user_usecase.dart';
@@ -31,16 +30,9 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     on<SaveProfile>((event, emit) async {
       emit(ProfileSaving());
 
-      final updated = ProfileUser(
-        id: userId,
-        name: event.user.name,
-        age: event.user.age,
-        caregiverPhone: event.user.caregiverPhone,
-        emergencyEnabled: event.user.emergencyEnabled,
-        updatedAt: DateTime.now(),
-      );
+      await saveUser(event.user);
 
-      await saveUser(updated);
+      emit(ProfileLoaded(event.user));
     });
 
     add(LoadProfile());

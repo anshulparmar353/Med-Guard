@@ -27,7 +27,6 @@ class _IntroPageState extends State<IntroPage> {
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
@@ -45,22 +44,30 @@ class _IntroPageState extends State<IntroPage> {
                 children: [
                   IntroItem(
                     title: "Welcome to Med Guard",
-                    subtitle: "Manage medications & wellness",
+                    subtitle:
+                        "Your personal health companion to manage medications, appointments, and wellness easily.",
                     buttonText: "Next",
+                    image: "assets/intro_1.png",
                     onTap: next,
                     onSkip: () => context.go(AppRoutes.setup),
                   ),
+
                   IntroItem(
                     title: "Stay Protected",
-                    subtitle: "Get timely reminders",
+                    subtitle:
+                        "Get timely reminders for medicines, doctor visits, and important health checkups.",
                     buttonText: "Next",
+                    image: "assets/intro_2.png",
                     onTap: next,
                     onSkip: () => context.go(AppRoutes.setup),
                   ),
+
                   IntroItem(
                     title: "Never Miss a Dose",
-                    subtitle: "Enable notifications",
+                    subtitle:
+                        "Enable notifications to receive gentle reminders and stay consistent with your medication.",
                     buttonText: "Get Started",
+                    image: "assets/intro_3.png",
                     onTap: next,
                     onSkip: () => context.go(AppRoutes.setup),
                   ),

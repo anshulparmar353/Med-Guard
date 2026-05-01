@@ -19,9 +19,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   final nameController = TextEditingController();
   final emailController = TextEditingController();
+  final userPhoneController = TextEditingController();
+  final caregiverNameController = TextEditingController();
   final phoneController = TextEditingController();
   final ageController = TextEditingController();
-  final caregiverNameController = TextEditingController();
   final caregiverPhoneController = TextEditingController();
 
   String gender = "Male";
@@ -37,6 +38,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     nameController.text = user.name;
     ageController.text = user.age.toString();
+    userPhoneController.text = user.userPhone ?? "";
+    caregiverNameController.text = user.caregiverName ?? "";
     caregiverPhoneController.text = user.caregiverPhone ?? "";
     emergencyEnabled = user.emergencyEnabled;
   }
@@ -53,6 +56,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
       id: DateTime.now().toString(),
       name: nameController.text.trim(),
       age: int.tryParse(ageController.text) ?? 0,
+      userPhone: userPhoneController.text.trim(),
+      caregiverName: caregiverNameController.text.trim(),
       caregiverPhone: caregiverPhoneController.text.trim(),
       emergencyEnabled: emergencyEnabled,
       updatedAt: DateTime.now(),
@@ -79,7 +84,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 _sectionTitle("Personal Information"),
 
                 _inputField("Full Name", nameController, Icons.person),
@@ -124,23 +128,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   "Contact Phone",
                   caregiverPhoneController,
                   Icons.phone,
-                ),
-
-                SwitchListTile(
-                  value: emergencyEnabled,
-                  onChanged: (val) => setState(() => emergencyEnabled = val),
-                  title: const Text("Enable Emergency Alerts"),
-                ),
-
-                const SizedBox(height: 16),
-
-                _sectionTitle("Preferences"),
-
-                SwitchListTile(
-                  value: notificationsEnabled,
-                  onChanged: (val) =>
-                      setState(() => notificationsEnabled = val),
-                  title: const Text("Enable Notifications"),
                 ),
 
                 const SizedBox(height: 30),

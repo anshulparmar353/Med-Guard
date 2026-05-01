@@ -23,6 +23,7 @@ class ProfileUserModelAdapter extends TypeAdapter<ProfileUserModel> {
       caregiverPhone: fields[3] as String?,
       emergencyEnabled: fields[4] as bool,
       updatedAt: fields[5] as DateTime,
+      
     );
   }
 

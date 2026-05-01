@@ -26,7 +26,7 @@ import 'package:med_guard/features/pillbox/presentation/bloc/pillbox_bloc.dart';
 
 import 'package:med_guard/features/profile/data/models/profile_user_model.dart';
 import 'package:med_guard/features/profile/presentation/bloc/profile_bloc.dart';
-import 'package:med_guard/features/profile/presentation/bloc/profile_state.dart';
+import 'package:med_guard/features/profile/presentation/bloc/profile_event.dart';
 
 import 'package:med_guard/features/sync/data/models/sync_item.dart';
 import 'package:med_guard/features/sync/domain/entities/sync_type.dart';
@@ -74,8 +74,14 @@ void _postAppInit() {
   final lifecycleSync = getIt<AppLifecycleSync>();
   lifecycleSync.init();
 
-  Future.delayed(const Duration(seconds: 1), () {
-    unawaited(getIt<DailyDoseGenerator>().generateTodayDoses());
+  Future.microtask(() async {
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    unawaited(
+      Future.delayed(const Duration(seconds: 3), () async {
+        await getIt<DailyDoseGenerator>().generateTodayDoses();
+      }),
+    );
   });
 }
 
@@ -102,27 +108,22 @@ class MyAppWrapper extends StatelessWidget {
             providers: [
               if (userId != null)
                 BlocProvider(
-                  key: ValueKey(userId),
-                  create: (_) => getIt<ProfileBloc>(param1: userId),
+                  key: ValueKey("profile_$userId"),
+                  create: (_) =>
+                      getIt<ProfileBloc>(param1: userId)..add(LoadProfile()),
                 ),
 
               BlocProvider(
-                key: ValueKey(userId),
+                key: const ValueKey("dashboard"),
                 create: (_) => getIt<DashboardBloc>(),
               ),
 
-              BlocProvider(create: (_) => getIt<PillboxBloc>(param1: userId)),
+              BlocProvider(
+                key: ValueKey("pillbox_$userId"),
+                create: (_) => getIt<PillboxBloc>(param1: userId),
+              ),
             ],
-            child: userId != null
-                ? BlocListener<ProfileBloc, ProfileState>(
-                    listener: (context, state) {
-                      if (state is ProfileLoaded) {
-                        getIt<AuthNotifier>().triggerRouterRefresh();
-                      }
-                    },
-                    child: MyApp(router: router),
-                  )
-                : MyApp(router: router),
+            child: MyApp(router: router),
           );
         },
       ),

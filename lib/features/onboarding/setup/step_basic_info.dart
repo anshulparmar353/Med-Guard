@@ -1,15 +1,27 @@
 import 'package:flutter/material.dart';
 
-class StepBasic extends StatelessWidget {
+class StepBasic extends StatefulWidget {
   final Function(String, int) onNext;
 
   const StepBasic({super.key, required this.onNext});
 
   @override
-  Widget build(BuildContext context) {
-    final nameCtrl = TextEditingController();
-    final ageCtrl = TextEditingController();
+  State<StepBasic> createState() => _StepBasicState();
+}
 
+class _StepBasicState extends State<StepBasic> {
+  final nameCtrl = TextEditingController();
+  final ageCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    nameCtrl.dispose();
+    ageCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return SingleChildScrollView(
       child: Container(
         padding: const EdgeInsets.all(24),
@@ -68,7 +80,7 @@ class StepBasic extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  onNext(nameCtrl.text, int.tryParse(ageCtrl.text) ?? 0);
+                  widget.onNext(nameCtrl.text, int.tryParse(ageCtrl.text) ?? 0);
                 },
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -77,7 +89,10 @@ class StepBasic extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text("Next",style: TextStyle(color: Colors.white),),
+                child: const Text(
+                  "Next",
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ),
           ],

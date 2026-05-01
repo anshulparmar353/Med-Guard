@@ -1,16 +1,28 @@
 import 'package:flutter/material.dart';
 
-class StepCaregiver extends StatelessWidget {
-  final Function(String?) onNext;
+class StepCaregiver extends StatefulWidget {
+  final Function(String?, String?) onNext;
   final VoidCallback onBack;
 
   const StepCaregiver({super.key, required this.onNext, required this.onBack});
 
   @override
-  Widget build(BuildContext context) {
-    final nameCtrl = TextEditingController();
-    final phoneCtrl = TextEditingController();
+  State<StepCaregiver> createState() => _StepCaregiverState();
+}
 
+class _StepCaregiverState extends State<StepCaregiver> {
+  final nameCtrl = TextEditingController();
+  final phoneCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    nameCtrl.dispose();
+    phoneCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return SingleChildScrollView(
       child: Container(
         padding: const EdgeInsets.all(24),
@@ -81,8 +93,10 @@ class StepCaregiver extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () =>
-                    onNext(phoneCtrl.text.isEmpty ? null : phoneCtrl.text),
+                onPressed: () => widget.onNext(
+                  nameCtrl.text.isEmpty ? null : nameCtrl.text,
+                  phoneCtrl.text.isEmpty ? null : phoneCtrl.text,
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   padding: const EdgeInsets.symmetric(vertical: 14),
@@ -95,7 +109,7 @@ class StepCaregiver extends StatelessWidget {
             ),
 
             TextButton(
-              onPressed: () => onNext(null),
+              onPressed: () => widget.onNext(nameCtrl.text, phoneCtrl.text),
               child: const Text("Skip for now"),
             ),
           ],

@@ -84,7 +84,7 @@ final getIt = GetIt.instance;
 Future<void> init() async {
   // Firebase
   getIt.registerLazySingleton(() => FirebaseAuth.instance);
-  
+
   getIt.registerLazySingleton(() => FirebaseFirestore.instance);
 
   getIt.registerLazySingleton(() => FlutterLocalNotificationsPlugin());
@@ -269,6 +269,7 @@ Future<void> init() async {
       updateMedicineWithReschedule: getIt(),
       syncMedicines: getIt(),
       syncManager: getIt(),
+      medicineRepository: getIt(),
     ),
   );
 

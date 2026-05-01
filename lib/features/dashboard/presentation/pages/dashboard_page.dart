@@ -22,7 +22,6 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<DashboardBloc, DashboardState>(
@@ -108,34 +107,6 @@ class _DashboardPageState extends State<DashboardPage> {
                           label: "Add Medicine",
                           onTap: () {
                             context.push(AppRoutes.addMedicine);
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ActionCard(
-                          color: Colors.white,
-                          icon: Icons.access_time,
-                          label: "Set Reminder",
-                          onTap: () {
-                            context.push(AppRoutes.addMedicine);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ActionCard(
-                          color: Colors.white,
-                          icon: Icons.camera_alt,
-                          label: "Scan Prescription",
-                          onTap: () {
-                            context.push(AppRoutes.scanner);
                           },
                         ),
                       ),

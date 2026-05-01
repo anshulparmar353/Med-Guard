@@ -148,11 +148,11 @@ class AppGoRouter {
           routes: [
             GoRoute(
               path: AppRoutes.dashboardScreen,
-              builder: (_, __) => const DashboardPage(),
+              builder: (_, _) => const DashboardPage(),
             ),
             GoRoute(
               path: AppRoutes.pillbox,
-              builder: (_, __) => const PillboxPage(),
+              builder: (_, _) => const PillboxPage(),
             ),
             GoRoute(
               path: AppRoutes.profileScreen,
@@ -171,11 +171,11 @@ class AppGoRouter {
             ),
             GoRoute(
               path: AppRoutes.addMedicine,
-              builder: (_, __) => const AddMedicinePage(),
+              builder: (_, _) => const AddMedicinePage(),
             ),
             GoRoute(
               path: AppRoutes.scanner,
-              builder: (_, __) => const ScannerPage(),
+              builder: (_, _) => const ScannerPage(),
             ),
           ],
         ),

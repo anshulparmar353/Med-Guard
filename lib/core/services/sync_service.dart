@@ -58,8 +58,6 @@ class SyncService {
               await remote.uploadMedicine(userId, data);
             } else if (item.type == SyncType.updateDose) {
               await trackingRemote.uploadDose(userId, data);
-            } else if (item.type == SyncType.delete) {
-              await remote.deleteMedicine(userId, data['id']);
             }
           } catch (e) {
             logger.e('Invalid sync item data: ${item.data}', error: e);

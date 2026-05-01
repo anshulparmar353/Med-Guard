@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_guard/core/routes/app_go_router.dart';
-import 'package:med_guard/core/services/notification_permission_service.dart';
 import 'package:med_guard/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:med_guard/features/auth/presentation/bloc/auth_event.dart';
 import 'package:med_guard/features/auth/presentation/bloc/auth_state.dart';
 import 'package:med_guard/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:med_guard/features/profile/presentation/bloc/profile_state.dart';
+import 'package:app_settings/app_settings.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -126,18 +126,21 @@ class _ProfilePageState extends State<ProfilePage> {
 
                           const Divider(height: 1),
 
-                          _tile(
-                            icon: Icons.notifications_none,
-                            color: Colors.green,
-                            title: "Notifications",
-                            onTap: () async {
-                              final status =
-                                  await Permission.notification.status;
-                              print("🔍 Notification status: $status");
-                              await NotificationPermissionService.request();
+                          FutureBuilder<PermissionStatus>(
+                            future: Permission.notification.status,
+                            builder: (context, snapshot) {
+                              final enabled = snapshot.data?.isGranted ?? false;
+
+                              return _tile(
+                                icon: Icons.notifications_none,
+                                color: Colors.green,
+                                title: enabled
+                                    ? "Notifications (On)"
+                                    : "Notifications (Off)",
+                                onTap: openNotificationSettings,
+                              );
                             },
                           ),
-
                           const Divider(height: 1),
 
                           _tile(
@@ -147,8 +150,6 @@ class _ProfilePageState extends State<ProfilePage> {
                             textColor: Colors.red,
                             onTap: () {
                               context.read<AuthBloc>().add(LogoutRequested());
-                              // ❌ DON'T manually navigate
-                              // Router redirect should handle it
                             },
                           ),
 
@@ -166,6 +167,50 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       ),
     );
+  }
+
+  Future<void> openNotificationSettings() async {
+    final status = await Permission.notification.status;
+
+    if (status.isGranted) {
+      final open = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text("Notifications Enabled"),
+          content: const Text(
+            "Notifications are already enabled.\nDo you want to manage settings?",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => context.pop(false),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+              onPressed: () => context.pop(true),
+              child: const Text(
+                "Open Settings",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (open == true) {
+        AppSettings.openAppSettings();
+
+        if (!mounted) return;
+      }
+    } else {
+      final result = await Permission.notification.request();
+
+      if (!result.isGranted) {
+        AppSettings.openAppSettings();
+
+        if (!mounted) return;
+      }
+    }
   }
 
   Widget _tile({

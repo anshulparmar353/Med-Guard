@@ -23,10 +23,6 @@ class MedicineLocalDataSource {
     return meds;
   }
 
-  Future<void> deleteMedicine(String id) async {
-    await box.delete(id);
-  }
-
   Future<void> clearAll() async {
     await box.clear();
   }
