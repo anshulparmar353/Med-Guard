@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:med_guard/features/pillbox/domain/entities/medicine.dart';
 import 'package:med_guard/features/pillbox/presentation/bloc/pillbox_bloc.dart';
 import 'package:med_guard/features/pillbox/presentation/bloc/pillbox_event.dart';
@@ -76,7 +77,7 @@ class _UpdateMedicinePageState extends State<UpdateMedicinePage> {
       dosage: dosage,
       times: _times,
 
-      updatedAt: DateTime.now(), 
+      updatedAt: DateTime.now(),
 
       isDeleted: false,
       isDaily: true,
@@ -89,7 +90,7 @@ class _UpdateMedicinePageState extends State<UpdateMedicinePage> {
       UpdateMedicineWithRescheduleEvent(updatedMedicine),
     );
 
-    Navigator.pop(context);
+    context.pop();
   }
 
   @override

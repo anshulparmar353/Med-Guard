@@ -244,6 +244,7 @@ Future<void> init() async {
       medicineRepository: getIt(),
       cancelReminder: getIt(),
       trackingRepository: getIt(),
+      remote: getIt(),
     ),
   );
 
@@ -261,8 +262,9 @@ Future<void> init() async {
     ),
   );
 
-  getIt.registerFactory(
-    () => PillboxBloc(
+  getIt.registerFactoryParam<PillboxBloc, String, void>(
+    (userId, _) => PillboxBloc(
+      userId: userId,
       getMedicines: getIt(),
       addMedicineWithSchedule: getIt(),
       deleteMedicineWithCleanup: getIt(),
@@ -272,7 +274,7 @@ Future<void> init() async {
       medicineRepository: getIt(),
     ),
   );
-
+  
   // ================= Remainder =================
 
   getIt.registerLazySingleton<ScheduleReminder>(

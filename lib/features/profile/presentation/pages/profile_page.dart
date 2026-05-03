@@ -6,6 +6,7 @@ import 'package:med_guard/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:med_guard/features/auth/presentation/bloc/auth_event.dart';
 import 'package:med_guard/features/auth/presentation/bloc/auth_state.dart';
 import 'package:med_guard/features/profile/presentation/bloc/profile_bloc.dart';
+import 'package:med_guard/features/profile/presentation/bloc/profile_event.dart';
 import 'package:med_guard/features/profile/presentation/bloc/profile_state.dart';
 import 'package:app_settings/app_settings.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -19,6 +20,23 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   bool isDarkMode = false;
+
+  bool notificationEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPermission();
+  }
+
+  Future<void> _loadPermission() async {
+    final status = await Permission.notification.status;
+    if (mounted) {
+      setState(() {
+        notificationEnabled = status.isGranted;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -119,28 +137,30 @@ class _ProfilePageState extends State<ProfilePage> {
                             icon: Icons.person_outline,
                             color: Colors.blue,
                             title: "Edit Profile",
-                            onTap: () {
-                              context.push(AppRoutes.editProfileScreen);
+                            onTap: () async {
+                              final result = await context.push(
+                                AppRoutes.editProfileScreen,
+                              );
+
+                              if (!mounted) return;
+
+                              if (result == true) {
+                                context.read<ProfileBloc>().add(LoadProfile());
+                              }
                             },
                           ),
 
                           const Divider(height: 1),
 
-                          FutureBuilder<PermissionStatus>(
-                            future: Permission.notification.status,
-                            builder: (context, snapshot) {
-                              final enabled = snapshot.data?.isGranted ?? false;
-
-                              return _tile(
-                                icon: Icons.notifications_none,
-                                color: Colors.green,
-                                title: enabled
-                                    ? "Notifications (On)"
-                                    : "Notifications (Off)",
-                                onTap: openNotificationSettings,
-                              );
-                            },
+                          _tile(
+                            icon: Icons.notifications_none,
+                            color: Colors.green,
+                            title: notificationEnabled
+                                ? "Notifications (On)"
+                                : "Notifications (Off)",
+                            onTap: openNotificationSettings,
                           ),
+
                           const Divider(height: 1),
 
                           _tile(
@@ -173,6 +193,8 @@ class _ProfilePageState extends State<ProfilePage> {
     final status = await Permission.notification.status;
 
     if (status.isGranted) {
+      if (!mounted) return;
+
       final open = await showDialog<bool>(
         context: context,
         builder: (_) => AlertDialog(
@@ -197,18 +219,16 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       );
 
+      if (!mounted) return;
+
       if (open == true) {
         AppSettings.openAppSettings();
-
-        if (!mounted) return;
       }
     } else {
       final result = await Permission.notification.request();
 
       if (!result.isGranted) {
         AppSettings.openAppSettings();
-
-        if (!mounted) return;
       }
     }
   }

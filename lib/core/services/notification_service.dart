@@ -8,8 +8,6 @@ import 'package:timezone/data/latest.dart' as tz;
 class NotificationService {
   static final _notifications = FlutterLocalNotificationsPlugin();
 
-  // ================= INIT =================
-
   static Future<void> init() async {
     print("🚀 NOTIFICATION INIT");
 
@@ -33,7 +31,7 @@ class NotificationService {
         final data = _parsePayload(response.payload);
 
         print("📦 PARSED DOSE ID: ${data?.doseId}");
-        
+
         if (data == null) return;
 
         final action = response.actionId ?? "";
@@ -61,8 +59,6 @@ class NotificationService {
     await android?.requestExactAlarmsPermission();
   }
 
-  // ================= BACKGROUND =================
-
   @pragma('vm:entry-point')
   static Future<void> notificationTapBackground(
     NotificationResponse response,
@@ -84,8 +80,6 @@ class NotificationService {
     }
   }
 
-  // ================= SCHEDULE =================
-
   static Future<void> schedule({
     required int id,
     required String title,
@@ -94,18 +88,31 @@ class NotificationService {
     required String payload,
     bool repeatDaily = false,
   }) async {
-    await _notifications.cancel(id: id);
-
     final now = tz.TZDateTime.now(tz.local);
-    var scheduled = tz.TZDateTime.from(time, tz.local);
+
+    var scheduled = tz.TZDateTime(
+      tz.local,
+      time.year,
+      time.month,
+      time.day,
+      time.hour,
+      time.minute,
+      0,
+      0,
+    );
 
     if (scheduled.isBefore(now)) {
       if (repeatDaily) {
         scheduled = scheduled.add(const Duration(days: 1));
       } else {
+        print("⛔ Skipping past notification");
         return;
       }
     }
+
+    print("📅 NOW: $now");
+    print("⏰ TARGET: $scheduled");
+    print("⏳ DIFF: ${scheduled.difference(now).inSeconds} sec");
 
     await _notifications.zonedSchedule(
       id: id,
@@ -118,6 +125,8 @@ class NotificationService {
           'Med Guard',
           importance: Importance.max,
           priority: Priority.high,
+          fullScreenIntent: true,
+          category: AndroidNotificationCategory.alarm,
           actions: [
             AndroidNotificationAction(
               'TAKEN',
@@ -134,8 +143,6 @@ class NotificationService {
     );
   }
 
-  // ================= CANCEL =================
-
   static Future<void> cancel(int id) async {
     await _notifications.cancel(id: id);
   }
@@ -143,8 +150,6 @@ class NotificationService {
   static int generateNotificationId(String doseId) {
     return doseId.hashCode & 0x7fffffff;
   }
-
-  // ================= PARSER =================
 
   static _Payload? _parsePayload(String? payload) {
     if (payload == null) return null;

@@ -41,6 +41,12 @@ class _LoginPageState extends State<LoginPage> {
                 context,
               ).showSnackBar(SnackBar(content: Text(state.message)));
             }
+
+            if (state is AuthAuthenticated) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text("Login Successfully")));
+            }
           },
           builder: (context, state) {
             return Center(
@@ -198,7 +204,10 @@ class _LoginPageState extends State<LoginPage> {
                                     )
                                   : const Text(
                                       "Login",
-                                      style: TextStyle(fontSize: 16,color: Colors.white),
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.white,
+                                      ),
                                     ),
                             ),
                           ),

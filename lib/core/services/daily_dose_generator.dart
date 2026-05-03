@@ -40,12 +40,20 @@ class DailyDoseGenerator {
       });
 
       if (!stillValid) {
-        await doseLocal.deleteByMedicineId(d.id);
+        final medsIds = medicines.map((m) => m.id).toSet();
+
+        for (final d in existingDoses) {
+          if (!medsIds.contains(d.medicineId)) {
+            await doseLocal.deleteByMedicineId(d.medicineId);
+            print("🗑 REMOVED DOSE: ${d.id}");
+          }
+        }
+
         print("🗑 REMOVED OLD DOSE: ${d.id}");
       }
     }
 
-    for (final med in medicines) {
+    for (final med in medicines.where((m) => !m.isDeleted)) {
       if (!med.isDaily) continue;
 
       print("💊 MED: ${med.name}");
@@ -57,9 +65,13 @@ class DailyDoseGenerator {
           startOfDay.day,
           time.hour,
           time.minute,
+          0,
+          0,
         );
 
         final doseId = DoseIdHelper.generate(med.id, scheduled);
+
+        print("🧪 TRY CREATE DOSE: $doseId");
 
         final existing = await doseLocal.getById(doseId);
 

@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:med_guard/core/di/injection.dart';
-import 'package:med_guard/core/services/daily_dose_generator.dart';
 import 'package:med_guard/core/sync/sync_manager.dart';
 import 'package:med_guard/features/pillbox/domain/repository/medicine_repository.dart';
 import 'package:med_guard/features/pillbox/domain/usecases/add_medicine_with_schedule.dart';
@@ -14,6 +12,7 @@ import 'package:med_guard/features/pillbox/presentation/bloc/pillbox_state.dart'
 import 'package:med_guard/features/sync/domain/usecases/sync_medicine.dart';
 
 class PillboxBloc extends Bloc<PillboxEvent, PillboxState> {
+  final String userId;
   final GetMedicines getMedicines;
   final AddMedicineWithSchedule addMedicineWithSchedule;
   final DeleteMedicineWithCleanup deleteMedicineWithCleanup;
@@ -23,6 +22,7 @@ class PillboxBloc extends Bloc<PillboxEvent, PillboxState> {
   final MedicineRepository medicineRepository;
 
   PillboxBloc({
+    required this.userId,
     required this.getMedicines,
     required this.addMedicineWithSchedule,
     required this.deleteMedicineWithCleanup,
@@ -57,8 +57,6 @@ class PillboxBloc extends Bloc<PillboxEvent, PillboxState> {
     try {
       await addMedicineWithSchedule(event.medicine);
 
-      await getIt<DailyDoseGenerator>().generateTodayDoses();
-
       await Future.delayed(const Duration(milliseconds: 200));
 
       final meds = await getMedicines();
@@ -75,8 +73,8 @@ class PillboxBloc extends Bloc<PillboxEvent, PillboxState> {
     Emitter<PillboxState> emit,
   ) async {
     try {
-      await deleteMedicineWithCleanup(event.medicineId);
-
+      await deleteMedicineWithCleanup(userId, event.medicineId);
+      
       final meds = await getMedicines();
       emit(PillboxLoaded(meds));
 
@@ -92,8 +90,6 @@ class PillboxBloc extends Bloc<PillboxEvent, PillboxState> {
   ) async {
     try {
       await updateMedicineWithReschedule(event.medicine);
-
-      await getIt<DailyDoseGenerator>().generateTodayDoses();
 
       final meds = await getMedicines();
       emit(PillboxLoaded(meds));

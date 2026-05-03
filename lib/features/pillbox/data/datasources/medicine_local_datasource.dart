@@ -12,15 +12,7 @@ class MedicineLocalDataSource {
   }
 
   List<MedicineModel> getMedicines() {
-    final meds = box.values.toList();
-
-    print("📦 HIVE MEDICINES COUNT: ${meds.length}");
-
-    for (final m in meds) {
-      print("💊 ${m.name} | isDaily=${m.isDaily} | times=${m.times}");
-    }
-
-    return meds;
+    return box.values.where((m) => !m.isDeleted).toList();
   }
 
   Future<void> clearAll() async {

@@ -56,6 +56,8 @@ class SyncService {
 
             if (item.type == SyncType.add || item.type == SyncType.update) {
               await remote.uploadMedicine(userId, data);
+            } else if (item.type == SyncType.delete) {
+              await remote.uploadMedicine(userId, data);
             } else if (item.type == SyncType.updateDose) {
               await trackingRemote.uploadDose(userId, data);
             }
@@ -101,6 +103,7 @@ class SyncService {
 
   Future<void> _pullWithRetry(String userId) async {
     print("PULL DATA");
+
     final lastSync = await _getLastSyncTime();
 
     final remoteMedicines = await retry(
@@ -125,6 +128,11 @@ class SyncService {
     final remoteDoses = await retry(
       () => trackingRemote.fetchDoses(userId, lastSync),
     );
+
+    print("🌐 REMOTE DOSES:");
+    for (final d in remoteDoses) {
+      print("REMOTE → ${d["id"]}");
+    }
 
     final localDoses = await trackingLocal.getAllDoses();
 
@@ -162,9 +170,12 @@ class SyncService {
     for (final remote in remoteDoses) {
       final local = localMap[remote.id];
 
-      // 🔥 only update if changed
       if (local == null || remote.updatedAt.isAfter(local.updatedAt)) {
-        await trackingLocal.update(remote);
+        if (remote.isDeleted) {
+          await trackingLocal.deleteByMedicineId(remote.medicineId);
+        } else {
+          await trackingLocal.update(remote);
+        }
       }
     }
 
@@ -174,13 +185,18 @@ class SyncService {
   Future<void> _updateMedicinesIncrementally(
     List<MedicineModel> remoteMeds,
   ) async {
-    final localMap = {for (final m in local.getMedicines()) m.id: m};
+    final allLocal = local.box.values.toList();
+    final localMap = {for (final m in allLocal) m.id: m};
 
     for (final remote in remoteMeds) {
       final localMed = localMap[remote.id];
 
       if (localMed == null || remote.updatedAt.isAfter(localMed.updatedAt)) {
         await local.addMedicine(remote);
+
+        if (remote.isDeleted) {
+          await trackingLocal.deleteByMedicineId(remote.id);
+        }
       }
     }
 

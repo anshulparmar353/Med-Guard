@@ -13,8 +13,6 @@ class NotificationActionHandler {
 
   NotificationActionHandler(this.markTaken, this.markSkipped);
 
-  // ================= FOREGROUND (MAIN APP) =================
-
   Future<void> onAction(String doseId, String action) async {
     print("🔥 ACTION: $action → $doseId");
 
@@ -33,7 +31,6 @@ class NotificationActionHandler {
     print("✅ HIVE UPDATED → UI WILL AUTO UPDATE");
   }
 
-  // ================= BACKGROUND (APP CLOSED) =================
   @pragma('vm:entry-point')
   static Future<void> handleBackgroundAction({
     required String doseId,

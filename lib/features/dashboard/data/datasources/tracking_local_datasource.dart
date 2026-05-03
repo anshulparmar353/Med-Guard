@@ -122,7 +122,15 @@ class TrackingLocalDataSource {
   Future<void> addDoseIfNotExists(DoseLogModel dose) async {
     final exists = box.containsKey(dose.id);
 
+    if (box.containsKey(dose.id)) {
+      print("🚫 DUPLICATE BLOCKED: ${dose.id}");
+      return;
+    }
+
     await box.put(dose.id, dose);
+
+    print("📦 HIVE WRITE: ${dose.id}");
+    print("📦 TOTAL COUNT: ${box.length}");
 
     if (!exists) {
       print("✅ NEW DOSE ADDED: ${dose.id}");

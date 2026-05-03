@@ -123,9 +123,17 @@ class DoseLogModel extends HiveObject {
   }
 
   static DateTime _parseDate(dynamic value) {
-    if (value is Timestamp) return value.toDate();
-    if (value is String) return DateTime.parse(value);
-    throw Exception("Invalid date format");
+    try {
+      if (value is Timestamp) return value.toDate();
+      if (value is String) return DateTime.parse(value);
+      if (value is DateTime) return value;
+
+      // fallback
+      return DateTime.now();
+    } catch (e) {
+      print("❌ DATE PARSE FAILED: $value");
+      return DateTime.now();
+    }
   }
 
   DoseLogModel copyWith({

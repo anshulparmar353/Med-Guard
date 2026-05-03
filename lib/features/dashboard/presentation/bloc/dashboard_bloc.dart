@@ -45,6 +45,16 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
   void _listenToHive() {
     final box = Hive.box<DoseLogModel>('dosesBox');
 
+    print("📡 HIVE EVENT TRIGGERED");
+
+    final raw = box.values.toList();
+
+    print("📦 RAW HIVE COUNT: ${raw.length}");
+
+    for (final d in raw) {
+      print("RAW → ${d.id}");
+    }
+
     _hiveSub = box
         .watch()
         .debounceTime(const Duration(milliseconds: 500))
@@ -61,7 +71,6 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     LoadDashboard event,
     Emitter<DashboardState> emit,
   ) async {
-
     emit(DashboardLoading());
 
     final box = Hive.box<DoseLogModel>('dosesBox');
@@ -94,6 +103,11 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     Emitter<DashboardState> emit,
   ) {
     print("🔵 UI UPDATE TRIGGERED");
+
+    print("📊 DASHBOARD RECEIVED DOSES:");
+    for (final d in event.doses) {
+      print("👉 ${d.id} | ${d.scheduledTime}");
+    }
 
     final now = DateTime.now();
 

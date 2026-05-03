@@ -33,6 +33,18 @@ class _EditProfilePageState extends State<EditProfilePage> {
     context.read<ProfileBloc>().add(LoadProfile());
   }
 
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    userPhoneController.dispose();
+    caregiverNameController.dispose();
+    phoneController.dispose();
+    ageController.dispose();
+    caregiverPhoneController.dispose();
+    super.dispose();
+  }
+
   void _prefill(ProfileUser? user) {
     if (user == null) return;
 
@@ -44,7 +56,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     emergencyEnabled = user.emergencyEnabled;
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(
         context,
@@ -64,7 +76,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
 
     context.read<ProfileBloc>().add(SaveProfile(user));
-    context.pop();
+
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    if (!mounted) return;
+    context.pop(true);
   }
 
   @override
@@ -73,86 +89,89 @@ class _EditProfilePageState extends State<EditProfilePage> {
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(title: const Text("Edit Profile"), centerTitle: true),
 
-      body: BlocBuilder<ProfileBloc, ProfileState>(
-        builder: (context, state) {
+      body: BlocListener<ProfileBloc, ProfileState>(
+        listener: (context, state) {
           if (state is ProfileLoaded) {
             _prefill(state.user);
           }
+        },
+        child: BlocBuilder<ProfileBloc, ProfileState>(
+          builder: (context, state) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _sectionTitle("Personal Information"),
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _sectionTitle("Personal Information"),
+                  _inputField("Full Name", nameController, Icons.person),
 
-                _inputField("Full Name", nameController, Icons.person),
+                  _inputField("Email", emailController, Icons.email),
 
-                _inputField("Email", emailController, Icons.email),
+                  _inputField("Phone Number", phoneController, Icons.phone),
 
-                _inputField("Phone Number", phoneController, Icons.phone),
+                  const SizedBox(height: 16),
 
-                const SizedBox(height: 16),
+                  _sectionTitle("Important for reminders"),
 
-                _sectionTitle("Important for reminders"),
+                  _inputField("Age", ageController, null),
 
-                _inputField("Age", ageController, null),
+                  _dropdownField("Gender", gender),
 
-                _dropdownField("Gender", gender),
+                  const SizedBox(height: 16),
 
-                const SizedBox(height: 16),
-
-                Row(
-                  children: const [
-                    Icon(Icons.contact_emergency, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text(
-                      "Emergency Contact",
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold,
+                  Row(
+                    children: const [
+                      Icon(Icons.contact_emergency, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text(
+                        "Emergency Contact",
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
 
-                const SizedBox(height: 10),
+                  const SizedBox(height: 10),
 
-                _inputField(
-                  "Contact Name",
-                  caregiverNameController,
-                  Icons.person,
-                ),
+                  _inputField(
+                    "Contact Name",
+                    caregiverNameController,
+                    Icons.person,
+                  ),
 
-                _inputField(
-                  "Contact Phone",
-                  caregiverPhoneController,
-                  Icons.phone,
-                ),
+                  _inputField(
+                    "Contact Phone",
+                    caregiverPhoneController,
+                    Icons.phone,
+                  ),
 
-                const SizedBox(height: 30),
+                  const SizedBox(height: 30),
 
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                    ),
-                    onPressed: _save,
-                    child: const Text(
-                      "Save Changes",
-                      style: TextStyle(fontSize: 16, color: Colors.white),
+                      onPressed: _save,
+                      child: const Text(
+                        "Save Changes",
+                        style: TextStyle(fontSize: 16, color: Colors.white),
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          );
-        },
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
