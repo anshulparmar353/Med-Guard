@@ -278,7 +278,7 @@ The app includes detailed logs for:
 **Anshul Parmar**
 
 * GitHub: https://github.com/anshulparmar353
-* LinkedIn: https://linkedin.com
+* LinkedIn: https://www.linkedin.com/in/anshulparmar353
 
 ---
 
