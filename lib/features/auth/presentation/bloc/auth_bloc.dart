@@ -4,6 +4,8 @@ import 'package:bloc/bloc.dart';
 import 'package:med_guard/core/services/connectivity_service.dart';
 import 'package:med_guard/core/services/sync_service.dart';
 import 'package:med_guard/features/auth/domain/repository/auth_repository.dart';
+import 'package:med_guard/features/auth/domain/usecases/get_current_user_usecase.dart';
+import 'package:med_guard/features/auth/domain/usecases/google_sign_in_usecase.dart';
 import 'package:med_guard/features/auth/domain/usecases/login_usecase.dart';
 import 'package:med_guard/features/auth/domain/usecases/logout_usecase.dart';
 import 'package:med_guard/features/auth/domain/usecases/signup_usecase.dart';
@@ -19,6 +21,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final SyncService syncService;
   final ConnectivityService connectivityService;
   final MedicineRepository medRepo;
+  final GoogleSignInUseCase googleSignInUseCase;
+  final GetCurrentUserUseCase getCurrentUserUseCase;
 
   StreamSubscription? _connectionSub;
 
@@ -30,15 +34,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     this.syncService,
     this.connectivityService,
     this.medRepo,
+    this.googleSignInUseCase,
+    this.getCurrentUserUseCase,
   ) : super(AuthInitial()) {
     on<AppStarted>((event, emit) async {
       emit(AuthLoading());
 
       try {
-        final user = await repository.getCurrentUser();
+        final user = await getCurrentUserUseCase();
 
         if (user != null) {
           await syncService.sync(user.id);
+
           _bindAutoSync(user.id);
 
           emit(AuthAuthenticated(user));
@@ -84,6 +91,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     });
 
+    on<GoogleSignInRequested>((event, emit) async {
+      emit(AuthLoading());
+
+      try {
+        final user = await googleSignInUseCase();
+
+        await syncService.sync(user.id); 
+
+        _bindAutoSync(user.id); 
+
+        emit(AuthAuthenticated(user));
+      } catch (e) {
+        emit(AuthError(e.toString()));
+        emit(AuthUnauthenticated()); 
+      }
+    });
+
     on<LogoutRequested>((event, emit) async {
       emit(AuthLoading());
 
@@ -96,13 +120,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
         await logoutUseCase();
 
+        _connectionSub?.cancel(); 
+
         emit(AuthUnauthenticated());
       } catch (e) {
         emit(AuthError("Logout failed"));
       }
     });
   }
+
   void _bindAutoSync(String userId) {
+    _connectionSub?.cancel();
+
     _connectionSub = connectivityService.connectionStream.listen((
       isOnline,
     ) async {

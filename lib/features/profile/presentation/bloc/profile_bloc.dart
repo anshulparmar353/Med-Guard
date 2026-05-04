@@ -1,4 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:med_guard/core/di/injection.dart';
+import 'package:med_guard/core/notifier/auth_notifier.dart';
 import 'package:med_guard/features/profile/domain/usecases/get_profile_user_usecase.dart';
 import 'package:med_guard/features/profile/domain/usecases/save_profile_user_usecase.dart';
 import 'package:med_guard/features/profile/domain/usecases/watch_profile_user_usecase.dart';
@@ -17,13 +19,22 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     on<LoadProfile>((event, emit) async {
       emit(ProfileLoading());
 
-      print("PROFILE LOADED");
+      print("🔥 PROFILE LOADING FOR: $userId");
 
-      await getUser(userId);
+      final user = await getUser(userId);
+      emit(ProfileLoaded(user));
+
+      getIt<AuthNotifier>().refresh();
 
       await emit.forEach(
         watchUser(userId),
-        onData: (user) => ProfileLoaded(user),
+        onData: (user) {
+          print("🔥 PROFILE STREAM UPDATE");
+
+          getIt<AuthNotifier>().refresh();
+
+          return ProfileLoaded(user);
+        },
       );
     });
 
@@ -33,6 +44,8 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       await saveUser(event.user);
 
       emit(ProfileLoaded(event.user));
+
+      getIt<AuthNotifier>().refresh();
     });
 
     add(LoadProfile());

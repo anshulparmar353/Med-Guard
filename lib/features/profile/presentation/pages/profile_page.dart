@@ -6,7 +6,6 @@ import 'package:med_guard/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:med_guard/features/auth/presentation/bloc/auth_event.dart';
 import 'package:med_guard/features/auth/presentation/bloc/auth_state.dart';
 import 'package:med_guard/features/profile/presentation/bloc/profile_bloc.dart';
-import 'package:med_guard/features/profile/presentation/bloc/profile_event.dart';
 import 'package:med_guard/features/profile/presentation/bloc/profile_state.dart';
 import 'package:app_settings/app_settings.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -138,15 +137,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             color: Colors.blue,
                             title: "Edit Profile",
                             onTap: () async {
-                              final result = await context.push(
-                                AppRoutes.editProfileScreen,
-                              );
-
-                              if (!mounted) return;
-
-                              if (result == true) {
-                                context.read<ProfileBloc>().add(LoadProfile());
-                              }
+                              context.push(AppRoutes.editProfileScreen);
                             },
                           ),
 

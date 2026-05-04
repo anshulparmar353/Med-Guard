@@ -67,6 +67,7 @@ void main() async {
       child: MyAppWrapper(authBloc: authBloc, router: router),
     ),
   );
+
   Future.microtask(_postAppInit);
 }
 
@@ -96,36 +97,51 @@ class MyAppWrapper extends StatelessWidget {
     return BlocProvider<AuthBloc>(
       create: (_) => authBloc,
 
-      child: BlocBuilder<AuthBloc, AuthState>(
-        builder: (context, authState) {
-          String? userId;
+      child: BlocListener<AuthBloc, AuthState>(
+        listenWhen: (prev, curr) => curr is AuthAuthenticated,
+        listener: (context, state) async {
+          final user = (state as AuthAuthenticated).user;
 
-          if (authState is AuthAuthenticated) {
-            userId = authState.user.id;
-          }
+          final lifecycleSync = getIt<AppLifecycleSync>();
+          lifecycleSync.init();
 
-          return MultiBlocProvider(
-            providers: [
-              if (userId != null)
-                BlocProvider(
-                  key: ValueKey("profile_$userId"),
-                  create: (_) =>
-                      getIt<ProfileBloc>(param1: userId)..add(LoadProfile()),
-                ),
+          print("👤 Logged in user: ${user.id}");
 
-              BlocProvider(
-                key: const ValueKey("dashboard"),
-                create: (_) => getIt<DashboardBloc>(),
-              ),
-
-              BlocProvider(
-                key: ValueKey("pillbox_$userId"),
-                create: (_) => getIt<PillboxBloc>(param1: userId),
-              ),
-            ],
-            child: MyApp(router: router),
-          );
+          unawaited(getIt<DailyDoseGenerator>().generateTodayDoses());
         },
+
+        child: BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, authState) {
+            String? userId;
+
+            if (authState is AuthAuthenticated) {
+              userId = authState.user.id;
+            }
+
+            return MultiBlocProvider(
+              providers: [
+                if (userId != null)
+                  BlocProvider(
+                    key: ValueKey("profile_$userId"),
+                    create: (_) =>
+                        getIt<ProfileBloc>(param1: userId)..add(LoadProfile()),
+                  ),
+
+                if (userId != null)
+                  BlocProvider(
+                    key: ValueKey("pillbox_$userId"),
+                    create: (_) => getIt<PillboxBloc>(param1: userId),
+                  ),
+
+                BlocProvider(
+                  key: const ValueKey("dashboard"),
+                  create: (_) => getIt<DashboardBloc>(),
+                ),
+              ],
+              child: MyApp(router: router),
+            );
+          },
+        ),
       ),
     );
   }

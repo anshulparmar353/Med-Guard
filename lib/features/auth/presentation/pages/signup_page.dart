@@ -266,7 +266,11 @@ class _SignupPageState extends State<SignupPage> {
                               width: double.infinity,
                               height: 50,
                               child: OutlinedButton.icon(
-                                onPressed: () {},
+                                onPressed: () {
+                                  context.read<AuthBloc>().add(
+                                    GoogleSignInRequested(),
+                                  );
+                                },
                                 icon: Image.network(
                                   "https://cdn-icons-png.flaticon.com/512/281/281764.png",
                                   height: 20,

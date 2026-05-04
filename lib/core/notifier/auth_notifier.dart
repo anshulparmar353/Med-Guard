@@ -11,11 +11,13 @@ class AuthNotifier extends ChangeNotifier {
   bool _isAuthenticated = false;
   bool _isLoading = true;
   String? _userId;
+  bool _isAppStarting = true;
 
   bool get isAuthenticated => _isAuthenticated;
   bool get isLoading => _isLoading;
   bool get isSplashDone => _isSplashDone;
   String? get userId => _userId;
+  bool get isAppStarting => _isAppStarting;
 
   AuthNotifier(this._authBloc) {
     update(_authBloc.state);
@@ -37,28 +39,28 @@ class AuthNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
-  void update(AuthState state) {
-    bool changed = false;
+  void refresh() {
+    notifyListeners();
+  }
 
+  void update(AuthState state) {
     if (state is AuthAuthenticated) {
-      if (!_isAuthenticated || _userId != state.user.id) {
-        _isAuthenticated = true;
-        _userId = state.user.id;
-        changed = true;
-      }
+      _isAuthenticated = true;
+      _userId = state.user.id;
       _isLoading = false;
+      _isSplashDone = true;
+      _isAppStarting = false;
     } else if (state is AuthUnauthenticated) {
-      if (_isAuthenticated) {
-        _isAuthenticated = false;
-        _userId = null;
-        changed = true;
-      }
+      _isAuthenticated = false;
+      _userId = null;
       _isLoading = false;
+      _isSplashDone = true;
+      _isAppStarting = false;
     } else if (state is AuthLoading) {
       _isLoading = true;
     }
 
-    if (changed) notifyListeners();
+    notifyListeners();
   }
 
   @override

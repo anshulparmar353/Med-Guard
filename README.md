@@ -16,6 +16,7 @@ This app provides:
 * 📅 Smart daily dose generation
 * 🔔 Actionable notifications (Taken / Skip)
 * 📊 Adherence tracking & analytics
+* 🔐 Passwordless login with Google (no email/password needed)
 * 🌐 Sync-ready architecture with Firebase
 * 📦 Fully offline-first using Hive
 

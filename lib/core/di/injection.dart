@@ -23,6 +23,8 @@ import 'package:med_guard/features/auth/data/datasources/auth_remote_datasource.
 import 'package:med_guard/features/auth/data/models/user_model.dart';
 import 'package:med_guard/features/auth/data/repository_impl/auth_repository_impl.dart';
 import 'package:med_guard/features/auth/domain/repository/auth_repository.dart';
+import 'package:med_guard/features/auth/domain/usecases/get_current_user_usecase.dart';
+import 'package:med_guard/features/auth/domain/usecases/google_sign_in_usecase.dart';
 import 'package:med_guard/features/auth/domain/usecases/login_usecase.dart';
 import 'package:med_guard/features/auth/domain/usecases/logout_usecase.dart';
 import 'package:med_guard/features/auth/domain/usecases/signup_usecase.dart';
@@ -145,6 +147,7 @@ Future<void> init() async {
     () => AuthRepositoryImpl(
       remote: getIt<AuthRemoteDataSource>(),
       local: getIt<AuthLocalDataSource>(),
+      firebaseAuth: getIt<FirebaseAuth>(),
     ),
   );
 
@@ -160,6 +163,14 @@ Future<void> init() async {
     () => LogoutUseCase(getIt<AuthRepository>()),
   );
 
+  getIt.registerLazySingleton<GetCurrentUserUseCase>(
+    () => GetCurrentUserUseCase(getIt<AuthRepository>()),
+  );
+
+  getIt.registerLazySingleton<GoogleSignInUseCase>(
+    () => GoogleSignInUseCase(getIt<AuthRepository>()),
+  );
+
   getIt.registerLazySingleton<AuthBloc>(
     () => AuthBloc(
       getIt<LoginUseCase>(),
@@ -169,6 +180,8 @@ Future<void> init() async {
       getIt<SyncService>(),
       getIt<ConnectivityService>(),
       getIt<MedicineRepository>(),
+      getIt<GoogleSignInUseCase>(),
+      getIt<GetCurrentUserUseCase>(),
     ),
   );
 
@@ -217,7 +230,20 @@ Future<void> init() async {
   );
 
   getIt.registerLazySingleton(
-    () => AppLifecycleSync(getIt(), getIt(), getIt(), getIt()),
+    () => MissedDoseService(
+      getIt<TrackingLocalDataSource>(),
+      getIt<TrackingRemoteDataSource>(),
+      getIt<SyncQueueLocalDataSource>(),
+    ),
+  );
+
+  getIt.registerLazySingleton(
+    () => AppLifecycleSync(
+      getIt<SyncService>(),
+      getIt<MissedDoseService>(),
+      getIt<DailyDoseGenerator>(),
+      getIt<DashboardBloc>(),
+    ),
   );
 
   getIt.registerLazySingleton(() => SyncMedicines(getIt()));
@@ -274,7 +300,7 @@ Future<void> init() async {
       medicineRepository: getIt(),
     ),
   );
-  
+
   // ================= Remainder =================
 
   getIt.registerLazySingleton<ScheduleReminder>(
@@ -305,14 +331,6 @@ Future<void> init() async {
   getIt.registerLazySingleton(() => MarkDoseSkipped(getIt()));
   getIt.registerLazySingleton(() => MarkDoseMissed(getIt()));
   getIt.registerLazySingleton(() => GetWeeklyAdherence(getIt()));
-
-  getIt.registerLazySingleton(
-    () => MissedDoseService(
-      getIt<TrackingLocalDataSource>(),
-      getIt<TrackingRemoteDataSource>(),
-      getIt<SyncQueueLocalDataSource>(),
-    ),
-  );
 
   getIt.registerLazySingleton(
     () => DashboardBloc(

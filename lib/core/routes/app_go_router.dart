@@ -32,10 +32,7 @@ class AppGoRouter {
       refreshListenable: authNotifier,
 
       redirect: (context, state) {
-        final loggedIn = authNotifier.isAuthenticated;
-        final splashDone = authNotifier.isSplashDone;
-
-        print("ROUTER CHECK → loggedIn=$loggedIn");
+        final auth = authNotifier;
 
         final location = state.matchedLocation;
 
@@ -45,38 +42,36 @@ class AppGoRouter {
         final isIntro = location == AppRoutes.intro;
         final isSetup = location == AppRoutes.setup;
 
-        if (!splashDone) {
+        if (auth.isAppStarting) {
           return isSplash ? null : AppRoutes.splashScreen;
         }
 
-        if (isSplash) {
-          return loggedIn ? AppRoutes.dashboardScreen : AppRoutes.loginScreen;
-        }
-
-        if (!loggedIn) {
+        if (!auth.isAuthenticated) {
           return (isLogin || isSignup) ? null : AppRoutes.loginScreen;
         }
 
         final profileBloc = context.read<ProfileBloc?>();
         if (profileBloc == null) return null;
 
-        final profileState = profileBloc.state;
+        final stateProfile = profileBloc.state;
 
-        if (profileState is ProfileInitial || profileState is ProfileLoading) {
+        if (stateProfile is ProfileInitial || stateProfile is ProfileLoading) {
           return null;
         }
 
-        if (profileState is ProfileLoaded) {
-          final user = profileState.user;
+        if (stateProfile is ProfileLoaded) {
+          final user = stateProfile.user;
 
-          final incomplete = user == null || user.name.isEmpty || user.age == 0;
+          final isNewUser = user == null || user.name.isEmpty || user.age == 0;
 
-          if (incomplete && !(isIntro || isSetup)) {
-            return AppRoutes.intro;
-          }
-
-          if (!incomplete && (isIntro || isSetup)) {
-            return AppRoutes.dashboardScreen;
+          if (isNewUser) {
+            if (!isIntro && !isSetup) {
+              return AppRoutes.intro;
+            }
+          } else {
+            if (isIntro || isSetup || isSplash || isLogin) {
+              return AppRoutes.dashboardScreen;
+            }
           }
         }
 
