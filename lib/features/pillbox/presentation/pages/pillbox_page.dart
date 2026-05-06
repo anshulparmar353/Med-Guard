@@ -27,7 +27,13 @@ class _PillboxPageState extends State<PillboxPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("My Medicines"), centerTitle: true),
+      backgroundColor: Colors.white,
+
+      appBar: AppBar(
+        title: const Text("My Medicines"),
+        backgroundColor: Colors.white,
+        centerTitle: true,
+      ),
 
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.blue,
@@ -50,33 +56,6 @@ class _PillboxPageState extends State<PillboxPage> {
           }
 
           if (state is PillboxLoaded) {
-            if (state.medicines.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.medication_outlined,
-                      size: 60,
-                      color: Colors.grey,
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      "No medicines added",
-                      style: TextStyle(fontSize: 18),
-                    ),
-                    const SizedBox(height: 8),
-                    ElevatedButton(
-                      onPressed: () {
-                        context.push(AppRoutes.addMedicine);
-                      },
-                      child: const Text("Add Medicine"),
-                    ),
-                  ],
-                ),
-              );
-            }
-
             return ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: state.medicines.length,
@@ -98,8 +77,9 @@ class _PillboxPageState extends State<PillboxPage> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFFF2F4F7),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black, width: 0.2),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),

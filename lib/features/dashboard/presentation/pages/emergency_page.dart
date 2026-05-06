@@ -128,7 +128,7 @@ class _EmergencyPageState extends State<EmergencyPage>
                 icon: Icons.call,
                 title: "Call Ambulance",
                 subtitle: "Emergency: 108",
-                onTap: () => callNumber("6232075318"),
+                onTap: () => callNumber("108"),
               ),
 
               const SizedBox(height: 16),
@@ -138,7 +138,23 @@ class _EmergencyPageState extends State<EmergencyPage>
                 icon: Icons.contacts,
                 title: "Emergency Contacts",
                 subtitle: "Call your saved contacts",
-                onTap: () {},
+                onTap: () async {
+                  final profileState = context.read<ProfileBloc>().state;
+
+                  if (profileState is! ProfileLoaded) {
+                    _showError("Profile not loaded");
+                    return;
+                  }
+
+                  final phone = profileState.user?.caregiverPhone;
+
+                  if (phone == null || phone.isEmpty) {
+                    _showError("Add caregiver number in profile");
+                    return;
+                  }
+
+                  await callNumber(phone);
+                },
               ),
 
               const SizedBox(height: 16),

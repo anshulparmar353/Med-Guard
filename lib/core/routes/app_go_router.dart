@@ -41,13 +41,16 @@ class AppGoRouter {
         final isSignup = location == AppRoutes.signupScreen;
         final isIntro = location == AppRoutes.intro;
         final isSetup = location == AppRoutes.setup;
+        final isForgot = location == AppRoutes.forgotScreen;
 
         if (auth.isAppStarting) {
           return isSplash ? null : AppRoutes.splashScreen;
         }
 
         if (!auth.isAuthenticated) {
-          return (isLogin || isSignup) ? null : AppRoutes.loginScreen;
+          return (isLogin || isSignup || isForgot)
+              ? null
+              : AppRoutes.loginScreen;
         }
 
         final profileBloc = context.read<ProfileBloc?>();

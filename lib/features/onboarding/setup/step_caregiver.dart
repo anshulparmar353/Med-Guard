@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 class StepCaregiver extends StatefulWidget {
+
   final Function(String?, String?) onNext;
   final VoidCallback onBack;
 
@@ -11,6 +12,7 @@ class StepCaregiver extends StatefulWidget {
 }
 
 class _StepCaregiverState extends State<StepCaregiver> {
+  
   final nameCtrl = TextEditingController();
   final phoneCtrl = TextEditingController();
 

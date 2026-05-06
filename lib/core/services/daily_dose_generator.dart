@@ -2,6 +2,7 @@ import 'package:med_guard/core/helper/dose_id_helper.dart';
 import 'package:med_guard/features/dashboard/data/datasources/tracking_local_datasource.dart';
 import 'package:med_guard/features/dashboard/data/models/dose_log_model.dart';
 import 'package:med_guard/features/pillbox/data/datasources/medicine_local_datasource.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 class DailyDoseGenerator {
   final MedicineLocalDataSource medicineLocal;
@@ -15,8 +16,9 @@ class DailyDoseGenerator {
     final medicines = medicineLocal.getMedicines();
     final existingDoses = await doseLocal.getAllDoses();
 
-    final now = DateTime.now();
-    final startOfDay = DateTime(now.year, now.month, now.day);
+    final now = tz.TZDateTime.now(tz.local);
+
+    final startOfDay = tz.TZDateTime(tz.local, now.year, now.month, now.day);
 
     print("📦 MED COUNT: ${medicines.length}");
     print("📦 EXISTING DOSES: ${existingDoses.length}");
@@ -35,11 +37,13 @@ class DailyDoseGenerator {
         return med.times.any(
           (t) =>
               t.hour == d.scheduledTime.hour &&
-              t.minute == d.scheduledTime.minute,
+              t.minute == d.scheduledTime.minute &&
+              t.second == d.scheduledTime.second,
         );
       });
 
       if (!stillValid) {
+        
         final medsIds = medicines.map((m) => m.id).toSet();
 
         for (final d in existingDoses) {
@@ -48,7 +52,6 @@ class DailyDoseGenerator {
             print("🗑 REMOVED DOSE: ${d.id}");
           }
         }
-
         print("🗑 REMOVED OLD DOSE: ${d.id}");
       }
     }
@@ -59,14 +62,14 @@ class DailyDoseGenerator {
       print("💊 MED: ${med.name}");
 
       for (final time in med.times) {
-        final scheduled = DateTime(
+        final scheduled = tz.TZDateTime(
+          tz.local,
           startOfDay.year,
           startOfDay.month,
           startOfDay.day,
           time.hour,
           time.minute,
-          0,
-          0,
+          time.second,
         );
 
         final doseId = DoseIdHelper.generate(med.id, scheduled);
@@ -75,7 +78,7 @@ class DailyDoseGenerator {
 
         final existing = await doseLocal.getById(doseId);
 
-        final notificationId = doseId.hashCode;
+        final notificationId = doseId.hashCode & 0x7fffffff;
 
         if (existing != null) {
           await doseLocal.update(

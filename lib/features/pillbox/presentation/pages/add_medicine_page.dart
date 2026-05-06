@@ -112,6 +112,7 @@ class _AddMedicinePageState extends State<AddMedicinePage> {
 
   @override
   Widget build(BuildContext context) {
+    
     return BlocListener<PillboxBloc, PillboxState>(
       listener: (context, state) {
         print("STATE: $state");

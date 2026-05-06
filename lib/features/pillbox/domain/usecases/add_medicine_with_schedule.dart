@@ -19,22 +19,21 @@ class AddMedicineWithSchedule {
 
     final now = tz.TZDateTime.now(tz.local);
 
-    final today = DateTime(now.year, now.month, now.day);
-
     final doseLocal = getIt<TrackingLocalDataSource>();
 
     for (final time in medicine.times.toSet()) {
-      final scheduled = DateTime(
-        today.year,
-        today.month,
-        today.day,
+
+      final scheduled = tz.TZDateTime(
+        tz.local,
+        now.year,
+        now.month,
+        now.day,
         time.hour,
         time.minute,
-        0,
-        0,
+        time.second,
       );
 
-      if (scheduled.isBefore(now.add(const Duration(seconds: 5)))) {
+      if (scheduled.isBefore(now)) {
         continue;
       }
 

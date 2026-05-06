@@ -90,17 +90,8 @@ class NotificationService {
   }) async {
     final now = tz.TZDateTime.now(tz.local);
 
-    var scheduled = tz.TZDateTime(
-      tz.local,
-      time.year,
-      time.month,
-      time.day,
-      time.hour,
-      time.minute,
-      0,
-      0,
-    );
-
+    var scheduled = tz.TZDateTime.from(time, tz.local);
+    
     if (scheduled.isBefore(now)) {
       if (repeatDaily) {
         scheduled = scheduled.add(const Duration(days: 1));
